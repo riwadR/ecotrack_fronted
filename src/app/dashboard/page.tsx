@@ -1,10 +1,15 @@
+import DashboardKPIs from "@/components/dashboard/DashboardKPIs";
+import DashboardOverviewChart from "@/components/dashboard/DashboardOverviewChart";
+
 export default function DashboardPage() {
   return (
-    <section>
-      <h1 style={{ color: "#0f172a", marginBottom: "16px" }}>Dashboard</h1>
-      <p style={{ color: "#475569" }}>
-        Bienvenue sur ton dashboard EcoTrack.
-      </p>
-    </section>
+    <div style={{ display: "grid", gap: "32px" }}>
+      <div>
+        <h1 style={{ color: "#0f172a", margin: "0 0 4px" }}>Tableau de bord</h1>
+        <p style={{ color: "#64748b", margin: 0 }}>Vue globale EcoTrack</p>
+      </div>
+      <DashboardKPIs />
+      <DashboardOverviewChart />
+    </div>
   );
 }
