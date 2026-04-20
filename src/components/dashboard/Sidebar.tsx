@@ -15,6 +15,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/dashboard/alertes",   label: "⚠️ Alertes",     roles: ["ADMIN","GESTIONNAIRE"] },
   { href: "/dashboard/users",     label: "👥 Utilisateurs", roles: ["ADMIN","GESTIONNAIRE"] },
   { href: "/dashboard/profile",   label: "👤 Profil",       roles: ["ADMIN","GESTIONNAIRE","AGENT","CITOYEN"] },
+  { href: "/dashboard/zones", label: "📍 Zones", roles: ["ADMIN","GESTIONNAIRE","AGENT"] },
 ];
 
 const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
