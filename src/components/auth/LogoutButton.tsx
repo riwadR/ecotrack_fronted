@@ -9,12 +9,8 @@ export default function LogoutButton() {
 
   async function handleLogout() {
     setIsLoading(true);
-
     try {
-      await fetch("/api/logout", {
-        method: "POST",
-      });
-
+      await fetch("/api/logout", { method: "POST" });
       router.push("/login");
       router.refresh();
     } finally {
@@ -23,8 +19,24 @@ export default function LogoutButton() {
   }
 
   return (
-    <button onClick={handleLogout} disabled={isLoading}>
-      {isLoading ? "Déconnexion..." : "Se déconnecter"}
+    <button
+      onClick={handleLogout}
+      disabled={isLoading}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        backgroundColor: "transparent",
+        color: isLoading ? "#64748b" : "#f87171",
+        border: "1px solid #1e293b",
+        borderRadius: "8px",
+        fontSize: "14px",
+        fontWeight: 500,
+        cursor: isLoading ? "not-allowed" : "pointer",
+        textAlign: "left",
+        transition: "all 0.15s",
+      }}
+    >
+      {isLoading ? "Déconnexion..." : "🚪 Se déconnecter"}
     </button>
   );
 }

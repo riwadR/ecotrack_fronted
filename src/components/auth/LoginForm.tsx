@@ -32,7 +32,7 @@ export default function LoginForm() {
         return;
       }
 
-      router.push("/users");
+      router.push("/dashboard");
       router.refresh();
     } catch {
       setError("Une erreur est survenue.");
