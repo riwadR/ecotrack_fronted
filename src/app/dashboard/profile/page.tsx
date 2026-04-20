@@ -1,15 +1,13 @@
-import ProfileCard from "@/components/profile/ProfileCard";
-import CarbonStatsChart from "@/components/profile/CarbonStatsChart";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import ProfileClientPage from "./profile-client-page";
 
-export default function DashboardProfilePage() {
-  return (
-    <main style={{ minHeight: "100vh", padding: "40px 24px", backgroundColor: "#f8fafc" }}>
-      <ProfileCard
-        firstName="Maeva"
-        lastName="Utilisateur"
-        email="maeva@ecotrack.com"
-      />
-      <CarbonStatsChart />
-    </main>
-  );
+export default async function ProfilePage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  return <ProfileClientPage session={session} />;
 }
