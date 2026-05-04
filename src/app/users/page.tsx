@@ -1,12 +1,11 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import LogoutButton from "../../components/auth/LogoutButton";
+import { getSession } from "@/lib/auth";
 
 export default async function UsersPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
+  const session = await getSession();
 
-  if (!token) {
+  if (!session) {
     redirect("/login");
   }
 

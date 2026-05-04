@@ -28,7 +28,7 @@ export default function CollectesPage() {
     <div style={{ display: "grid", gap: "24px" }}>
       <div>
         <h1 style={{ color: "#0f172a", margin: "0 0 4px" }}>Collectes</h1>
-        <p style={{ color: "#64748b", margin: 0 }}>Suivi des tournées · {totalPoids} kg collectés aujourd'hui</p>
+        <p style={{ color: "#64748b", margin: 0 }}>Suivi des tournées · {totalPoids} kg collectés aujourd&apos;hui</p>
       </div>
 
       {/* KPI mini */}

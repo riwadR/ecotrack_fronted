@@ -9,20 +9,20 @@ import { Role } from "@/models/user";
 type NavLink = { href: string; label: string; roles: Role[] };
 
 const NAV_LINKS: NavLink[] = [
-  { href: "/dashboard",           label: "🏠 Dashboard",    roles: ["ADMIN","GESTIONNAIRE","AGENT","CITOYEN"] },
-  { href: "/dashboard/capteurs",  label: "📡 Capteurs",     roles: ["ADMIN","GESTIONNAIRE","AGENT"] },
-  { href: "/dashboard/collectes", label: "🗑️ Collectes",   roles: ["ADMIN","GESTIONNAIRE","AGENT"] },
-  { href: "/dashboard/alertes",   label: "⚠️ Alertes",     roles: ["ADMIN","GESTIONNAIRE"] },
-  { href: "/dashboard/users",     label: "👥 Utilisateurs", roles: ["ADMIN","GESTIONNAIRE"] },
-  { href: "/dashboard/profile",   label: "👤 Profil",       roles: ["ADMIN","GESTIONNAIRE","AGENT","CITOYEN"] },
-  { href: "/dashboard/zones", label: "📍 Zones", roles: ["ADMIN","GESTIONNAIRE","AGENT"] },
+  { href: "/dashboard",           label: "🏠 Dashboard",    roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
+  { href: "/dashboard/capteurs",  label: "📡 Capteurs",     roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/dashboard/collectes", label: "🗑️ Collectes",   roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/dashboard/alertes",   label: "⚠️ Alertes",     roles: ["ADMIN", "MANAGER"] },
+  { href: "/dashboard/users",     label: "👥 Utilisateurs", roles: ["ADMIN"] },
+  { href: "/dashboard/profile",   label: "👤 Profil",       roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
+  { href: "/dashboard/zones", label: "📍 Zones", roles: ["ADMIN", "MANAGER", "AGENT"] },
 ];
 
 const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
   ADMIN:        { label: "Admin",        color: "#ef4444" },
-  GESTIONNAIRE: { label: "Gestionnaire", color: "#8b5cf6" },
+  MANAGER:      { label: "Gestionnaire", color: "#8b5cf6" },
   AGENT:        { label: "Agent",        color: "#0ea5e9" },
-  CITOYEN:      { label: "Citoyen",      color: "#16a34a" },
+  CITIZEN:      { label: "Citoyen",      color: "#16a34a" },
 };
 
 export default function Sidebar({ role, name }: { role: Role; name: string }) {
@@ -37,9 +37,6 @@ export default function Sidebar({ role, name }: { role: Role; name: string }) {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  // Ferme le menu au changement de route sur mobile
-  useEffect(() => { setIsOpen(false); }, [pathname]);
 
   const navContent = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
@@ -68,6 +65,9 @@ export default function Sidebar({ role, name }: { role: Role; name: string }) {
               <Link
                 key={href}
                 href={href}
+                onClick={() => {
+                  if (isMobile) setIsOpen(false);
+                }}
                 style={{
                   color: isActive ? "#ffffff" : "#94a3b8",
                   textDecoration: "none",

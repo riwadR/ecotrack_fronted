@@ -4,7 +4,7 @@ import {
   IoTPayload,
 } from "@/models/container";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = "/api/backend";
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

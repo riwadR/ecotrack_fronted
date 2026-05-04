@@ -9,6 +9,7 @@ export default function RegisterForm() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -31,6 +32,7 @@ export default function RegisterForm() {
         body: JSON.stringify({
           firstName,
           lastName,
+          dateOfBirth,
           email,
           password,
         }),
@@ -110,6 +112,29 @@ export default function RegisterForm() {
 
       <div>
         <label
+          htmlFor="dateOfBirth"
+          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
+        >
+          Date de naissance
+        </label>
+        <input
+          id="dateOfBirth"
+          type="date"
+          value={dateOfBirth}
+          onChange={(e) => setDateOfBirth(e.target.value)}
+          required
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: "10px",
+            border: "1px solid #cbd5e1",
+            outline: "none",
+          }}
+        />
+      </div>
+
+      <div>
+        <label
           htmlFor="email"
           style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
         >
@@ -144,7 +169,7 @@ export default function RegisterForm() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Minimum 6 caractères"
+          placeholder="Min. 8 caractères + maj/min/chiffre/spécial"
           required
           style={{
             width: "100%",

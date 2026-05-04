@@ -1,39 +1,55 @@
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const { firstName, lastName, email, password } = await request.json();
+  const { firstName, lastName, email, password, dateOfBirth } =
+    await request.json();
 
-  if (!firstName || !lastName || !email || !password) {
+  if (!firstName || !lastName || !email || !password || !dateOfBirth) {
     return NextResponse.json(
       { message: "Tous les champs sont obligatoires." },
       { status: 400 }
     );
   }
 
-  if (password.length < 6) {
+  const backendBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+  if (!backendBase) {
     return NextResponse.json(
-      { message: "Le mot de passe doit contenir au moins 6 caractères." },
-      { status: 400 }
+      { message: "NEXT_PUBLIC_API_URL manquant." },
+      { status: 500 }
     );
   }
 
-  if (email === "test@test.com") {
+  const res = await fetch(`${backendBase}/api/users/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      firstName,
+      lastName,
+      email,
+      password,
+      dateOfBirth,
+      role: "CITIZEN",
+    }),
+    cache: "no-store",
+  });
+
+  const text = await res.text().catch(() => "");
+  if (!res.ok) {
     return NextResponse.json(
-      { message: "Cet email est déjà utilisé." },
-      { status: 409 }
+      { message: text || "Impossible de créer le compte." },
+      { status: res.status }
     );
+  }
+
+  let data: unknown = undefined;
+  try {
+    data = text ? JSON.parse(text) : undefined;
+  } catch {
+    data = undefined;
   }
 
   return NextResponse.json(
-    {
-      success: true,
-      message: "Utilisateur créé avec succès.",
-      user: {
-        firstName,
-        lastName,
-        email,
-      },
-    },
+    { success: true, message: "Utilisateur créé avec succès.", user: data },
     { status: 201 }
   );
 }

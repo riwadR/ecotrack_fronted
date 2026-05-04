@@ -14,7 +14,7 @@ export type SessionUser = {
  */
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get("token");
+  const token = cookieStore.get("session");
 
   if (!token?.value) return null;
 

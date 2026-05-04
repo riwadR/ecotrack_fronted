@@ -26,12 +26,15 @@ export default function LoginForm() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        const data = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
         setError(data.message || "Identifiants invalides.");
         setIsLoading(false);
         return;
       }
 
+      // Le cookie session + JWT est posé côté serveur (route handler).
       router.push("/dashboard");
       router.refresh();
     } catch {

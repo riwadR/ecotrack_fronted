@@ -1,18 +1,54 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SessionUser } from "@/lib/auth";
 
 import { Role } from "@/models/user";
 
 type UserProfileResponse = {
   id: string;
-  name: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string | number[] | null;
+  emailVerified?: boolean;
+  mfaEnabled?: boolean;
+  createdAt?: string;
   role: Role;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+function normalizeDateOfBirthInput(
+  value: UserProfileResponse["dateOfBirth"]
+): string {
+  if (!value) return "";
+
+  if (typeof value === "string") {
+    // Accept "YYYY-MM-DD" or ISO strings
+    return value.includes("T") ? value.slice(0, 10) : value.slice(0, 10);
+  }
+
+  if (Array.isArray(value) && value.length >= 3) {
+    const year = String(value[0]).padStart(4, "0");
+    const month = String(value[1]).padStart(2, "0");
+    const day = String(value[2]).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  return "";
+}
+
+function formatFrenchLocalDate(yyyyMmDd?: string) {
+  if (!yyyyMmDd) return "—";
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(yyyyMmDd);
+  if (!m) return yyyyMmDd;
+  const year = Number(m[1]);
+  const monthIndex = Number(m[2]) - 1;
+  const day = Number(m[3]);
+  const d = new Date(year, monthIndex, day);
+  if (Number.isNaN(d.getTime())) return yyyyMmDd;
+  return d.toLocaleDateString("fr-FR");
+}
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -34,13 +70,17 @@ const labelStyle: React.CSSProperties = {
 };
 
 async function getCurrentUserByEmail(email: string): Promise<UserProfileResponse> {
-  const response = await fetch(`${API_URL}/users/by-email/${encodeURIComponent(email)}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `/api/backend/users/email/${encodeURIComponent(email)}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Impossible de charger le profil utilisateur.");
@@ -51,14 +91,20 @@ async function getCurrentUserByEmail(email: string): Promise<UserProfileResponse
 
 async function updateUser(
   id: string,
-  payload: { name: string; email: string; password?: string }
+  payload: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    dateOfBirth?: string | null;
+  }
 ): Promise<UserProfileResponse> {
-  const response = await fetch(`${API_URL}/users/${id}`, {
+  const response = await fetch(`/api/backend/users/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -75,22 +121,57 @@ async function updateUser(
   return response.json();
 }
 
+async function changePassword(
+  id: string,
+  payload: { oldPassword: string; newPassword: string }
+): Promise<void> {
+  const response = await fetch(`/api/backend/users/${id}/password`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    let message = "Impossible de changer le mot de passe.";
+    try {
+      const errorData = await response.json();
+      message = errorData?.message || message;
+    } catch {
+      //
+    }
+    throw new Error(message);
+  }
+}
+
 export default function ProfileClientPage({
   session,
 }: {
   session: SessionUser;
 }) {
+  const router = useRouter();
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState(session.role);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    name: session.name || "",
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
     email: session.email || "",
-    password: "",
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
+    newPassword: "",
   });
 
   useEffect(() => {
@@ -101,10 +182,13 @@ export default function ProfileClientPage({
         const user = await getCurrentUserByEmail(session.email);
         setUserId(user.id);
         setRole(user.role);
+        setEmailVerified(Boolean(user.emailVerified));
+        setMfaEnabled(Boolean(user.mfaEnabled));
         setForm({
-          name: user.name,
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          dateOfBirth: normalizeDateOfBirthInput(user.dateOfBirth),
           email: user.email,
-          password: "",
         });
       } catch (err) {
         setError(
@@ -120,8 +204,23 @@ export default function ProfileClientPage({
     loadProfile();
   }, [session.email]);
 
-  const handleChange = (key: "name" | "email" | "password", value: string) => {
+  const handleChange = (
+    key: "firstName" | "lastName" | "dateOfBirth" | "email",
+    value: string
+  ) => {
     setForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+    setSuccess("");
+    setError("");
+  };
+
+  const handlePasswordChange = (
+    key: "oldPassword" | "newPassword",
+    value: string
+  ) => {
+    setPasswordForm((prev) => ({
       ...prev,
       [key]: value,
     }));
@@ -135,18 +234,8 @@ export default function ProfileClientPage({
     setError("");
     setSuccess("");
 
-    if (!form.name.trim()) {
-      setError("Le nom est obligatoire.");
-      return;
-    }
-
     if (!form.email.trim()) {
       setError("L'email est obligatoire.");
-      return;
-    }
-
-    if (form.password && form.password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
       return;
     }
 
@@ -158,17 +247,26 @@ export default function ProfileClientPage({
     try {
       setSubmitting(true);
 
-      await updateUser(userId, {
-        name: form.name.trim(),
+      const updated = await updateUser(userId, {
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
         email: form.email.trim(),
-        password: form.password.trim() || undefined,
+        dateOfBirth: form.dateOfBirth ? form.dateOfBirth : null,
+      });
+
+      setUserId(updated.id);
+      setRole(updated.role);
+      setEmailVerified(Boolean(updated.emailVerified));
+      setMfaEnabled(Boolean(updated.mfaEnabled));
+      setForm({
+        firstName: updated.firstName || "",
+        lastName: updated.lastName || "",
+        dateOfBirth: normalizeDateOfBirthInput(updated.dateOfBirth),
+        email: updated.email,
       });
 
       setSuccess("Profil mis à jour avec succès.");
-      setForm((prev) => ({
-        ...prev,
-        password: "",
-      }));
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error
@@ -177,6 +275,39 @@ export default function ProfileClientPage({
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSubmitPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    if (!userId) {
+      setError("ID utilisateur introuvable.");
+      return;
+    }
+
+    if (!passwordForm.oldPassword.trim() || !passwordForm.newPassword.trim()) {
+      setError("Ancien et nouveau mot de passe sont obligatoires.");
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      await changePassword(userId, {
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setSuccess("Mot de passe mis à jour avec succès.");
+      setPasswordForm({ oldPassword: "", newPassword: "" });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Impossible de changer le mot de passe."
+      );
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -220,14 +351,29 @@ export default function ProfileClientPage({
               marginBottom: "16px",
             }}
           >
-            {(form.name || session.name || "U").charAt(0).toUpperCase()}
+            {(
+              form.firstName ||
+              form.lastName ||
+              session.name ||
+              session.email ||
+              "U"
+            )
+              .charAt(0)
+              .toUpperCase()}
           </div>
 
           <h2 style={{ margin: "0 0 6px", color: "#0f172a" }}>
-            {form.name || session.name}
+            {`${form.firstName} ${form.lastName}`.trim() || session.name}
           </h2>
           <p style={{ margin: "0 0 14px", color: "#64748b" }}>
             {form.email || session.email}
+          </p>
+
+          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "14px" }}>
+            <strong style={{ color: "#0f172a" }}>Date de naissance :</strong>{" "}
+            {form.dateOfBirth
+              ? formatFrenchLocalDate(form.dateOfBirth)
+              : "—"}
           </p>
 
           <span
@@ -263,10 +409,10 @@ export default function ProfileClientPage({
               }}
             >
               <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
-                Session active
+                Identité (backend)
               </p>
               <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>
-                Connecté via cookie httpOnly
+                {`${form.firstName} ${form.lastName}`.trim() || "—"}
               </p>
             </div>
 
@@ -278,10 +424,19 @@ export default function ProfileClientPage({
               }}
             >
               <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
-                État
+                Sécurité du compte
               </p>
-              <p style={{ margin: 0, color: "#16a34a", fontWeight: 600 }}>
-                Compte actif
+              <p style={{ margin: "0 0 6px", color: "#0f172a", fontWeight: 600 }}>
+                Email vérifié :{" "}
+                <span style={{ color: emailVerified ? "#16a34a" : "#ca8a04" }}>
+                  {emailVerified ? "Oui" : "Non"}
+                </span>
+              </p>
+              <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>
+                MFA :{" "}
+                <span style={{ color: mfaEnabled ? "#16a34a" : "#64748b" }}>
+                  {mfaEnabled ? "Activée" : "Désactivée"}
+                </span>
               </p>
             </div>
           </div>
@@ -300,105 +455,180 @@ export default function ProfileClientPage({
             Modifier mes informations
           </h2>
           <p style={{ margin: "0 0 20px", color: "#64748b" }}>
-            Mets à jour ton nom, ton email ou ton mot de passe.
+            Mets à jour ton prénom, ton nom, ta date de naissance ou ton email.
           </p>
 
           {loading ? (
             <p style={{ margin: 0, color: "#64748b" }}>Chargement du profil...</p>
           ) : (
-            <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
-              <div>
-                <label style={labelStyle}>Nom complet</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  style={inputStyle}
-                  placeholder="Ex. Marie Dupont"
-                />
-              </div>
+            <div style={{ display: "grid", gap: "22px" }}>
+              <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }} className="name-grid">
+                  <div>
+                    <label style={labelStyle}>Prénom</label>
+                    <input
+                      type="text"
+                      value={form.firstName}
+                      onChange={(e) => handleChange("firstName", e.target.value)}
+                      style={inputStyle}
+                      placeholder="Ex. Marie"
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Nom</label>
+                    <input
+                      type="text"
+                      value={form.lastName}
+                      onChange={(e) => handleChange("lastName", e.target.value)}
+                      style={inputStyle}
+                      placeholder="Ex. Dupont"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label style={labelStyle}>Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  style={inputStyle}
-                  placeholder="Ex. marie@ecotrack.com"
-                />
-              </div>
+                <div>
+                  <label style={labelStyle}>Email</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => handleChange("email", e.target.value)}
+                    style={inputStyle}
+                    placeholder="Ex. marie@ecotrack.com"
+                  />
+                </div>
 
-              <div>
-                <label style={labelStyle}>Nouveau mot de passe</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => handleChange("password", e.target.value)}
-                  style={inputStyle}
-                  placeholder="Laisser vide si inchangé"
-                />
-                <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" }}>
-                  Laisse ce champ vide pour conserver le mot de passe actuel.
+                <div>
+                  <label style={labelStyle}>Date de naissance</label>
+                  <input
+                    type="date"
+                    value={form.dateOfBirth}
+                    onChange={(e) => handleChange("dateOfBirth", e.target.value)}
+                    style={inputStyle}
+                  />
+                  <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" }}>
+                    Format attendu par l&apos;API : <strong>YYYY-MM-DD</strong>.
+                  </p>
+                </div>
+
+                {error ? (
+                  <div
+                    style={{
+                      background: "#fee2e2",
+                      color: "#dc2626",
+                      borderRadius: "12px",
+                      padding: "12px 14px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {error}
+                  </div>
+                ) : null}
+
+                {success ? (
+                  <div
+                    style={{
+                      background: "#dcfce7",
+                      color: "#16a34a",
+                      borderRadius: "12px",
+                      padding: "12px 14px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {success}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{
+                    background: "#0ea5e9",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "10px",
+                    padding: "12px 18px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    opacity: submitting ? 0.7 : 1,
+                  }}
+                >
+                  {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
+                </button>
+              </form>
+
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "18px" }}>
+                <h3 style={{ margin: "0 0 6px", color: "#0f172a" }}>
+                  Changer mon mot de passe
+                </h3>
+                <p style={{ margin: "0 0 16px", color: "#64748b" }}>
+                  Saisis ton ancien mot de passe puis le nouveau (8+ chars avec
+                  maj/min/chiffre/spécial).
                 </p>
+
+                <form
+                  onSubmit={handleSubmitPassword}
+                  style={{ display: "grid", gap: "14px" }}
+                >
+                  <div>
+                    <label style={labelStyle}>Ancien mot de passe</label>
+                    <input
+                      type="password"
+                      value={passwordForm.oldPassword}
+                      onChange={(e) =>
+                        handlePasswordChange("oldPassword", e.target.value)
+                      }
+                      style={inputStyle}
+                      placeholder="Ancien mot de passe"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Nouveau mot de passe</label>
+                    <input
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) =>
+                        handlePasswordChange("newPassword", e.target.value)
+                      }
+                      style={inputStyle}
+                      placeholder="Nouveau mot de passe"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={changingPassword}
+                    style={{
+                      background: "#0f172a",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "12px 18px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      opacity: changingPassword ? 0.7 : 1,
+                    }}
+                  >
+                    {changingPassword ? "Mise à jour..." : "Mettre à jour le mot de passe"}
+                  </button>
+                </form>
               </div>
-
-              {error ? (
-                <div
-                  style={{
-                    background: "#fee2e2",
-                    color: "#dc2626",
-                    borderRadius: "12px",
-                    padding: "12px 14px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {error}
-                </div>
-              ) : null}
-
-              {success ? (
-                <div
-                  style={{
-                    background: "#dcfce7",
-                    color: "#16a34a",
-                    borderRadius: "12px",
-                    padding: "12px 14px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {success}
-                </div>
-              ) : null}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                style={{
-                  background: "#0ea5e9",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "10px",
-                  padding: "12px 18px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  opacity: submitting ? 0.7 : 1,
-                }}
-              >
-                {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
-              </button>
-            </form>
+            </div>
           )}
         </div>
       </div>
 
       <style>{`
         .profile-grid { grid-template-columns: 0.9fr 1.1fr; }
+        .name-grid { grid-template-columns: 1fr 1fr; }
 
         @media (max-width: 991px) {
           .profile-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 767px) {
+          .name-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>

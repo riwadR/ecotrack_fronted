@@ -16,8 +16,8 @@ export default function UnauthorizedPage() {
       <span style={{ fontSize: "56px" }}>🚫</span>
       <h1 style={{ color: "#0f172a", margin: 0 }}>Accès refusé</h1>
       <p style={{ color: "#64748b", maxWidth: "360px", margin: 0 }}>
-        Tu n'as pas les droits nécessaires pour accéder à cette page.
-        Contacte un administrateur si tu penses que c'est une erreur.
+        Tu n&apos;as pas les droits nécessaires pour accéder à cette page.
+        Contacte un administrateur si tu penses que c&apos;est une erreur.
       </p>
       <Link
         href="/dashboard"

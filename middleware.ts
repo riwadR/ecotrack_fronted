@@ -3,12 +3,13 @@ import type { NextRequest } from "next/server";
 
 // Routes réservées à certains rôles
 const ROLE_PROTECTED: Record<string, string[]> = {
-  "/dashboard/users": ["ADMIN", "GESTIONNAIRE"],
+  "/dashboard/users": ["ADMIN"],
 };
 
-function decodeToken(token: string) {
+function decodeSession(session: string) {
   try {
-    const decoded = Buffer.from(token, "base64").toString("utf-8");
+    // Middleware runs on Edge runtime: prefer atob over Buffer.
+    const decoded = atob(session);
     return JSON.parse(decoded) as { role: string };
   } catch {
     return null;
@@ -16,25 +17,25 @@ function decodeToken(token: string) {
 }
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token");
+  const sessionCookie = request.cookies.get("session");
   const { pathname } = request.nextUrl;
 
   const isProtected = pathname.startsWith("/dashboard");
   const isAuth = pathname.startsWith("/login") || pathname.startsWith("/register");
 
-  // Pas de token → /login
-  if (isProtected && !token) {
+  // Pas de session → /login
+  if (isProtected && !sessionCookie) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Déjà connecté → /dashboard
-  if (isAuth && token) {
+  if (isAuth && sessionCookie) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Vérification RBAC par route
-  if (token) {
-    const session = decodeToken(token.value);
+  if (sessionCookie) {
+    const session = decodeSession(sessionCookie.value);
 
     for (const [route, allowedRoles] of Object.entries(ROLE_PROTECTED)) {
       if (pathname.startsWith(route)) {

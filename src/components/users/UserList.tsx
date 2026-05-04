@@ -1,3 +1,5 @@
+"use client";
+
 import { User } from "@/models/user";
 
 type UserListProps = {
@@ -21,7 +23,7 @@ export function UserList({ users }: UserListProps) {
         <p style={{ fontSize: "40px", margin: "0 0 12px" }}>👤</p>
         <p style={{ margin: 0, fontWeight: 600, color: "#64748b" }}>Aucun utilisateur</p>
         <p style={{ margin: "4px 0 0", fontSize: "14px" }}>
-          Les utilisateurs apparaîtront ici une fois l'API connectée.
+          Les utilisateurs apparaîtront ici une fois l&apos;API connectée.
         </p>
       </div>
     );
