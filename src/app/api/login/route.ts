@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
-
-function getBackendBaseUrl() {
-  const base = process.env.NEXT_PUBLIC_API_URL;
-  if (!base) {
-    throw new Error(
-      "NEXT_PUBLIC_API_URL is missing (expected e.g. http://localhost:8080)"
-    );
-  }
-  return base.replace(/\/+$/, "");
-}
+import { getBackendBaseUrl } from "@/lib/backend-url";
+import { setAuthCookiesOnResponse } from "@/lib/auth-cookies";
 
 export async function POST(request: Request) {
-  const reqUrl = new URL(request.url);
-  const isHttps = reqUrl.protocol === "https:";
-
   const { email, password } = await request.json();
 
   const backendBase = getBackendBaseUrl();
@@ -39,16 +28,13 @@ export async function POST(request: Request) {
     tokenType?: string;
   };
 
-  const profileRes = await fetch(
-    `${backendBase}/api/users/email/${encodeURIComponent(email)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${auth.accessToken}`,
-      },
-      cache: "no-store",
-    }
-  );
+  const profileRes = await fetch(`${backendBase}/api/auth/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${auth.accessToken}`,
+    },
+    cache: "no-store",
+  });
 
   if (!profileRes.ok) {
     return NextResponse.json(
@@ -65,38 +51,19 @@ export async function POST(request: Request) {
   };
 
   const name = `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim();
-  const sessionPayload = Buffer.from(
-    JSON.stringify({
-      email: profile.email,
-      name: name || profile.email,
-      role: profile.role,
-    })
-  ).toString("base64");
+  const sessionUser = {
+    email: profile.email,
+    name: name || profile.email,
+    role: profile.role,
+  };
 
-  // IMPORTANT: cookies must be set on the returned NextResponse
-  // (using cookies().set(...) may not emit Set-Cookie reliably).
   const response = NextResponse.json({ success: true, role: profile.role });
-  response.cookies.set("accessToken", auth.accessToken, {
-    httpOnly: true,
-    secure: isHttps,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24,
-  });
-  response.cookies.set("refreshToken", auth.refreshToken, {
-    httpOnly: true,
-    secure: isHttps,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 14,
-  });
-  response.cookies.set("session", sessionPayload, {
-    httpOnly: true,
-    secure: isHttps,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24,
-  });
+  setAuthCookiesOnResponse(
+    response,
+    auth.accessToken,
+    auth.refreshToken,
+    sessionUser
+  );
 
   return response;
 }

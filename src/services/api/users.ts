@@ -1,36 +1,26 @@
 import { User } from "@/models/user";
-import { cookies } from "next/headers";
-
-function getBackendBaseUrl() {
-  const base = process.env.NEXT_PUBLIC_API_URL;
-  if (!base) {
-    throw new Error(
-      "NEXT_PUBLIC_API_URL is missing (expected e.g. http://localhost:8080)"
-    );
-  }
-  return base.replace(/\/+$/, "");
-}
+import { headers } from "next/headers";
 
 export async function getUsers(): Promise<User[]> {
-  // Server Components: forward JWT explicitly (Node fetch won't attach browser cookies).
   if (typeof window === "undefined") {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get("accessToken")?.value;
-    if (!accessToken) {
-      throw new Error("Session expirée ou token manquant. Reconnecte-toi.");
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    const proto = h.get("x-forwarded-proto") ?? "http";
+    if (!host) {
+      throw new Error("Hôte inconnu pour l’appel interne vers l’API.");
     }
 
-    const res = await fetch(`${getBackendBaseUrl()}/api/users`, {
+    const res = await fetch(`${proto}://${host}/api/backend/users`, {
       cache: "no-store",
       headers: {
         accept: "application/json",
-        authorization: `Bearer ${accessToken}`,
+        cookie: h.get("cookie") ?? "",
       },
     });
 
     if (!res.ok) {
       if (res.status === 401) {
-        throw new Error("Session expirée ou token invalide. Reconnecte-toi.");
+        throw new Error("Session expirée ou token manquant. Reconnecte-toi.");
       }
       if (res.status === 403) {
         throw new Error(
@@ -56,7 +46,6 @@ export async function getUsers(): Promise<User[]> {
     }));
   }
 
-  // Client: use same-origin proxy (browser will attach cookies automatically).
   const res = await fetch(`/api/backend/users`, {
     cache: "no-store",
     credentials: "include",

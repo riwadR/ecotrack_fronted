@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-function getBackendBaseUrl() {
-  const base = process.env.NEXT_PUBLIC_API_URL;
-  if (!base) {
-    throw new Error(
-      "NEXT_PUBLIC_API_URL is missing (expected e.g. http://localhost:8080)"
-    );
-  }
-  return base.replace(/\/+$/, "");
-}
+import { getBackendBaseUrl } from "@/lib/backend-url";
+import { backendRefreshAndSessionUser } from "@/lib/backend-auth";
+import {
+  setAuthCookiesOnResponse,
+} from "@/lib/auth-cookies";
 
 async function proxy(req: NextRequest, method: string) {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("accessToken")?.value;
+  let accessToken = cookieStore.get("accessToken")?.value;
+  const refreshToken = cookieStore.get("refreshToken")?.value;
 
   const url = new URL(req.url);
   const prefix = "/api/backend/";
@@ -25,35 +21,66 @@ async function proxy(req: NextRequest, method: string) {
     `${getBackendBaseUrl()}/api/${restPath}${url.search}`
   );
 
-  const headers = new Headers(req.headers);
-  headers.delete("host");
-  headers.delete("connection");
-  headers.delete("content-length");
-
-  if (accessToken) {
-    headers.set("Authorization", `Bearer ${accessToken}`);
-  }
-
   const bodyText =
     method === "GET" || method === "HEAD" ? undefined : await req.text();
 
-  if (bodyText !== undefined) {
-    headers.set("content-length", Buffer.byteLength(bodyText, "utf8").toString());
-  } else {
+  async function callUpstream(token: string | undefined) {
+    const headers = new Headers(req.headers);
+    headers.delete("host");
+    headers.delete("connection");
     headers.delete("content-length");
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    } else {
+      headers.delete("authorization");
+    }
+
+    if (bodyText !== undefined) {
+      headers.set(
+        "content-length",
+        Buffer.byteLength(bodyText, "utf8").toString()
+      );
+    } else {
+      headers.delete("content-length");
+    }
+
+    return fetch(upstreamUrl, {
+      method,
+      headers,
+      body: bodyText,
+      cache: "no-store",
+    });
   }
 
-  const upstreamRes = await fetch(upstreamUrl, {
-    method,
-    headers,
-    body: bodyText,
-    cache: "no-store",
-  });
+  let upstreamRes = await callUpstream(accessToken);
+
+  if (upstreamRes.status === 401 && refreshToken) {
+    const refreshed = await backendRefreshAndSessionUser(refreshToken);
+    if (refreshed) {
+      accessToken = refreshed.accessToken;
+      upstreamRes = await callUpstream(accessToken);
+      const resHeaders = new Headers(upstreamRes.headers);
+      resHeaders.delete("transfer-encoding");
+      resHeaders.delete("content-encoding");
+      const body = await upstreamRes.text();
+      const res = new NextResponse(body, {
+        status: upstreamRes.status,
+        headers: resHeaders,
+      });
+      setAuthCookiesOnResponse(
+        res,
+        refreshed.accessToken,
+        refreshed.refreshToken,
+        refreshed.sessionUser
+      );
+      return res;
+    }
+  }
 
   const resHeaders = new Headers(upstreamRes.headers);
   resHeaders.delete("transfer-encoding");
   resHeaders.delete("content-encoding");
-
   const body = await upstreamRes.text();
 
   return new NextResponse(body, {
@@ -81,4 +108,3 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   return proxy(req, "DELETE");
 }
-

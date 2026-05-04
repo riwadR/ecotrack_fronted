@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { getBackendBaseUrl } from "@/lib/backend-url";
+import { clearAuthCookies } from "@/lib/auth-cookies";
 
 export async function POST() {
   const response = NextResponse.json({ success: true });
-  const cookieHeader = response.cookies;
 
-  // Best-effort: revoke refresh token in backend (so re-login won't conflict).
   try {
-    const cookieStr = (await import("next/headers")).cookies;
-    const cookieStore = await cookieStr();
+    const cookieStore = await cookies();
     const refreshToken = cookieStore.get("refreshToken")?.value;
-    const backendBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+    const backendBase = getBackendBaseUrl();
 
-    if (refreshToken && backendBase) {
+    if (refreshToken) {
       await fetch(`${backendBase}/api/auth/logout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -23,29 +23,6 @@ export async function POST() {
     // ignore logout revocation errors
   }
 
-  cookieHeader.set("accessToken", "", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  cookieHeader.set("refreshToken", "", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  cookieHeader.set("session", "", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
+  clearAuthCookies(response);
   return response;
 }
