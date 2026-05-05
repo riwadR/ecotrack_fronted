@@ -10,6 +10,7 @@ import { accessTokenNeedsRefresh } from "@/lib/jwt-access";
 
 const ROLE_PROTECTED: Record<string, string[]> = {
   "/dashboard/users": ["ADMIN"],
+  "/dashboard/map": ["ADMIN", "MANAGER", "AGENT", "CITIZEN"],
 };
 
 export async function middleware(request: NextRequest) {
@@ -20,7 +21,7 @@ export async function middleware(request: NextRequest) {
   let access = request.cookies.get(AUTH_COOKIE_NAMES.access)?.value;
   const refresh = request.cookies.get(AUTH_COOKIE_NAMES.refresh)?.value;
 
-  let res = NextResponse.next({ request });
+  const res = NextResponse.next({ request });
 
   if (refresh && accessTokenNeedsRefresh(access)) {
     const out = await backendRefreshAndSessionUser(refresh);

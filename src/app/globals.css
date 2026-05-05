@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Leaflet divIcon: remove default tile background on custom HTML markers */
+.ecotrack-map-marker {
+  background: transparent !important;
+  border: none !important;
+}

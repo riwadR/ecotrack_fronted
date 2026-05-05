@@ -6,6 +6,11 @@ import {
   setAuthCookiesOnResponse,
 } from "@/lib/auth-cookies";
 
+function isNullBodyStatus(status: number) {
+  // Per Fetch spec: null body statuses include 204, 205, 304.
+  return status === 204 || status === 205 || status === 304;
+}
+
 async function proxy(req: NextRequest, method: string) {
   const cookieStore = await cookies();
   let accessToken = cookieStore.get("accessToken")?.value;
@@ -63,11 +68,14 @@ async function proxy(req: NextRequest, method: string) {
       const resHeaders = new Headers(upstreamRes.headers);
       resHeaders.delete("transfer-encoding");
       resHeaders.delete("content-encoding");
-      const body = await upstreamRes.text();
-      const res = new NextResponse(body, {
-        status: upstreamRes.status,
-        headers: resHeaders,
-      });
+      resHeaders.delete("content-length");
+
+      const res = isNullBodyStatus(upstreamRes.status)
+        ? new NextResponse(null, { status: upstreamRes.status, headers: resHeaders })
+        : new NextResponse(await upstreamRes.text(), {
+            status: upstreamRes.status,
+            headers: resHeaders,
+          });
       setAuthCookiesOnResponse(
         res,
         refreshed.accessToken,
@@ -81,12 +89,17 @@ async function proxy(req: NextRequest, method: string) {
   const resHeaders = new Headers(upstreamRes.headers);
   resHeaders.delete("transfer-encoding");
   resHeaders.delete("content-encoding");
-  const body = await upstreamRes.text();
+  resHeaders.delete("content-length");
 
-  return new NextResponse(body, {
-    status: upstreamRes.status,
-    headers: resHeaders,
-  });
+  if (isNullBodyStatus(upstreamRes.status)) {
+    return new NextResponse(null, {
+      status: upstreamRes.status,
+      headers: resHeaders,
+    });
+  }
+
+  const body = await upstreamRes.text();
+  return new NextResponse(body, { status: upstreamRes.status, headers: resHeaders });
 }
 
 export async function GET(req: NextRequest) {
