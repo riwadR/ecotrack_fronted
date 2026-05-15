@@ -26,10 +26,11 @@ const STATUS_LABELS: Record<string, string> = {
 function buildMarkerIcon(fillLevelPercent: number, isSelected: boolean): L.DivIcon {
   const category = getFillLevelCategory(fillLevelPercent);
   const color = FILL_COLOR_BY_CATEGORY[category];
-  const sizePx = isSelected ? 32 : 26;
+  const sizePx = isSelected ? 22 : 18;
+  const borderPx = 2;
   const boxShadow = isSelected
-    ? "0 0 0 3px #0ea5e9, 0 2px 8px rgba(15,23,42,0.35)"
-    : "0 2px 8px rgba(15,23,42,0.35)";
+    ? "0 0 0 2px #0ea5e9, 0 1px 6px rgba(15,23,42,0.35)"
+    : "0 1px 5px rgba(15,23,42,0.3)";
 
   return L.divIcon({
     className: "ecotrack-map-marker",
@@ -38,7 +39,7 @@ function buildMarkerIcon(fillLevelPercent: number, isSelected: boolean): L.DivIc
       height:${sizePx}px;
       border-radius:9999px;
       background:${color};
-      border:3px solid #ffffff;
+      border:${borderPx}px solid #ffffff;
       box-shadow:${boxShadow};
     "></div>`,
     iconSize: [sizePx, sizePx],
@@ -85,6 +86,7 @@ export default function ContainerMarker({
 
   return (
     <Marker
+      key={`${container.id}-${container.fillLevelPercent}-${isSelected ? "sel" : "norm"}`}
       position={[container.latitude, container.longitude]}
       icon={icon}
       eventHandlers={{

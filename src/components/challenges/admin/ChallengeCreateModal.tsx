@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import type { ChallengeCreatePayload } from "@/lib/api/challenges";
+import type { Challenge, ChallengeCreatePayload } from "@/lib/api/challenges";
 import type { Zone } from "@/models/zone";
-import { datetimeLocalToIso } from "@/lib/challenges/challengeUtils";
+import { datetimeLocalToIso, isoToDatetimeLocal } from "@/lib/challenges/challengeUtils";
 
 export type ChallengeCreateModalProps = {
   isOpen: boolean;
   zones: Zone[];
+  editingChallenge?: Challenge | null;
   isSubmitting?: boolean;
   onConfirm: (payload: ChallengeCreatePayload) => void | Promise<void>;
   onCancel: () => void;
@@ -25,20 +26,34 @@ const defaultForm = {
 export default function ChallengeCreateModal({
   isOpen,
   zones,
+  editingChallenge = null,
   isSubmitting = false,
   onConfirm,
   onCancel,
 }: ChallengeCreateModalProps) {
   const titleId = useId();
+  const isEditMode = editingChallenge !== null;
   const [form, setForm] = useState(defaultForm);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setForm(defaultForm);
-      setValidationError(null);
+    if (!isOpen) {
+      return;
     }
-  }, [isOpen]);
+    if (editingChallenge) {
+      setForm({
+        title: editingChallenge.title,
+        description: editingChallenge.description ?? "",
+        goalThreshold: String(editingChallenge.goalThreshold),
+        startDate: isoToDatetimeLocal(editingChallenge.startDate),
+        endDate: isoToDatetimeLocal(editingChallenge.endDate),
+        zoneId: editingChallenge.zone.id,
+      });
+    } else {
+      setForm(defaultForm);
+    }
+    setValidationError(null);
+  }, [isOpen, editingChallenge]);
 
   if (!isOpen) {
     return null;
@@ -92,10 +107,12 @@ export default function ChallengeCreateModal({
     >
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
         <h2 id={titleId} className="text-lg font-semibold text-slate-900">
-          Nouveau défi
+          {isEditMode ? "Modifier le défi" : "Nouveau défi"}
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Publiez un objectif collectif pour une zone et une période définies.
+          {isEditMode
+            ? "Mettez à jour l'objectif, la zone ou la période du défi."
+            : "Publiez un objectif collectif pour une zone et une période définies."}
         </p>
 
         <div className="mt-5 grid gap-4">
@@ -195,7 +212,13 @@ export default function ChallengeCreateModal({
             onClick={handleSubmit}
             className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
           >
-            {isSubmitting ? "Création…" : "Créer le défi"}
+            {isSubmitting
+              ? isEditMode
+                ? "Enregistrement…"
+                : "Création…"
+              : isEditMode
+                ? "Enregistrer"
+                : "Créer le défi"}
           </button>
         </div>
       </div>

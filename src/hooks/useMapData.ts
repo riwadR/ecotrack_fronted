@@ -6,6 +6,9 @@ import {
   fetchZonesForMap,
 } from "@/services/api/mapDataSource";
 import { mapApiContainerToMapContainer, mapApiZoneToMapZone } from "@/lib/map/mapDtoMappers";
+import { usePeriodicRefresh } from "@/hooks/usePeriodicRefresh";
+
+const MAP_CONTAINERS_REFRESH_MS = 15_000;
 
 export type AgentRouteStructure = {
   /** Ordered stop coordinates for the assigned daily tour (future GET /tours/...). */
@@ -58,19 +61,33 @@ export function useMapData(viewerRole: Role): UseMapDataResult {
   const citizenAugments = useMemo(() => emptyCitizenAugments(), []);
   const agentRouteStructure = useMemo(() => emptyAgentRoute(), []);
 
-  const load = useCallback(async () => {
-    setError(null);
-    setIsLoading(true);
+  const canLoadOperationalMap = viewerRole === "ADMIN" || viewerRole === "MANAGER";
 
-    if (viewerRole === "AGENT") {
-      setContainers([]);
-      setZones([]);
-      setIsLoading(false);
-      return;
-    }
+  const load = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!options?.silent) {
+        setError(null);
+        setIsLoading(true);
+      }
 
-    try {
-      if (viewerRole === "ADMIN" || viewerRole === "MANAGER") {
+      try {
+        if (!canLoadOperationalMap) {
+          if (!options?.silent) {
+            setContainers([]);
+            setZones([]);
+          }
+          return;
+        }
+
+        if (options?.silent) {
+          const rawContainers = await fetchContainersForMap();
+          const mappedContainers = rawContainers
+            .map(mapApiContainerToMapContainer)
+            .filter((c): c is Container => c !== null);
+          setContainers(mappedContainers);
+          return;
+        }
+
         const [rawContainers, rawZones] = await Promise.all([
           fetchContainersForMap(),
           fetchZonesForMap(),
@@ -81,36 +98,38 @@ export function useMapData(viewerRole: Role): UseMapDataResult {
         const mappedZones = rawZones.map(mapApiZoneToMapZone).filter((z): z is Zone => z !== null);
         setContainers(mappedContainers);
         setZones(mappedZones);
-      } else if (viewerRole === "CITIZEN") {
-        const rawContainers = await fetchContainersForMap();
-        const mappedContainers = rawContainers
-          .map(mapApiContainerToMapContainer)
-          .filter((c): c is Container => c !== null);
-        setContainers(mappedContainers);
-        setZones([]);
-      } else {
-        setContainers([]);
-        setZones([]);
+      } catch (err) {
+        if (!options?.silent) {
+          setContainers([]);
+          setZones([]);
+          setError(err instanceof Error ? err.message : "Failed to load map data.");
+        }
+      } finally {
+        if (!options?.silent) {
+          setIsLoading(false);
+        }
       }
-    } catch (err) {
-      setContainers([]);
-      setZones([]);
-      setError(err instanceof Error ? err.message : "Failed to load map data.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [viewerRole]);
+    },
+    [canLoadOperationalMap]
+  );
+
+  const silentRefresh = useCallback(() => load({ silent: true }), [load]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  usePeriodicRefresh(silentRefresh, {
+    intervalMs: MAP_CONTAINERS_REFRESH_MS,
+    enabled: canLoadOperationalMap,
+  });
 
   return {
     containers,
     zones,
     isLoading,
     error,
-    refetch: load,
+    refetch: () => load(),
     isAgentRouteMode,
     agentRouteStructure,
     citizenAugments,

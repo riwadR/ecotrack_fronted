@@ -4,21 +4,36 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Polygon } from "leaflet";
+import type { Container } from "@/models/container";
+import type { Container as MapContainerModel } from "@/models/map";
 import type { Role } from "@/models/user";
 import type { Zone } from "@/models/zone";
 import { mapApiZoneToMapZone } from "@/lib/map/mapDtoMappers";
+import { wktPolygonOuterRingToLatLngTuples } from "@/lib/map/wktToLeafletRing";
 import { getPolygonOuterRingLatLng } from "@/lib/zones/polygonGeoUtils";
 import { latLngRingToPolygonWkt } from "@/lib/zones/wktFromLeaflet";
+import { mapApiContainerForZoneAdmin } from "@/lib/zones/mapContainerForZoneAdmin";
 import {
   createZone,
   deleteZone,
+  getZoneDeletionPreview,
   getZones,
   patchZoneDetails,
   updateZone,
 } from "@/services/api/zones";
+import type { ZoneDeletionPreview } from "@/services/api/zones";
+import ZoneDeleteConfirmModal from "@/components/zones/ZoneDeleteConfirmModal";
+import {
+  deleteContainer,
+  getContainers,
+  getContainersByZone,
+  updateContainer,
+} from "@/services/api/containers";
 import { fetchZonesForMap } from "@/services/api/mapDataSource";
 import ZoneNameModal from "@/components/zones/ZoneNameModal";
 import ZoneDetailsEditModal from "@/components/zones/ZoneDetailsEditModal";
+import ZoneContainersPanel from "@/components/zones/ZoneContainersPanel";
+import ContainerSerialEditModal from "@/components/zones/ContainerSerialEditModal";
 import { CrossDeleteIcon, PencilIcon } from "@/components/zones/zoneTableIcons";
 import type { ZonePolygonLayer } from "@/components/zones/ZoneManagementMap";
 
@@ -42,7 +57,11 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   const spatialEditingEnabled = viewerRole === "ADMIN" || viewerRole === "MANAGER";
 
   const [zones, setZones] = useState<Zone[]>([]);
+  const [mapContainers, setMapContainers] = useState<MapContainerModel[]>([]);
   const [mapPolygons, setMapPolygons] = useState<ZonePolygonLayer[]>([]);
+  const mapDrawSessionLockRef = useRef(false);
+  const [mapDrawSessionLocked, setMapDrawSessionLocked] = useState(false);
+  const containersPanelZoneRef = useRef<Zone | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mapMutationError, setMapMutationError] = useState("");
@@ -54,6 +73,22 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   const [nameModalOpen, setNameModalOpen] = useState(false);
   const [nameModalMountKey, setNameModalMountKey] = useState(0);
   const [nameModalSubmitting, setNameModalSubmitting] = useState(false);
+
+  const [containersPanelZone, setContainersPanelZone] = useState<Zone | null>(null);
+  const [panelContainers, setPanelContainers] = useState<Container[]>([]);
+  const [panelLoading, setPanelLoading] = useState(false);
+  const [panelError, setPanelError] = useState<string | null>(null);
+
+  const [editingContainer, setEditingContainer] = useState<Container | null>(null);
+  const [containerEditSubmitting, setContainerEditSubmitting] = useState(false);
+  const [containerEditError, setContainerEditError] = useState<string | null>(null);
+
+  const [zoneToDelete, setZoneToDelete] = useState<Zone | null>(null);
+  const [zoneDeletePreview, setZoneDeletePreview] = useState<ZoneDeletionPreview | null>(null);
+  const [zoneDeletePreviewLoading, setZoneDeletePreviewLoading] = useState(false);
+  const [zoneDeletePreviewError, setZoneDeletePreviewError] = useState<string | null>(null);
+  const [zoneDeleteSubmitting, setZoneDeleteSubmitting] = useState(false);
+
   const pendingPolygonRef = useRef<Polygon | null>(null);
   const pendingDiscardRef = useRef<(() => void) | null>(null);
   const zonesRef = useRef<Zone[]>([]);
@@ -64,19 +99,80 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     setMapPolygons((prev) => prev.filter((p) => p.id !== zoneId));
   }, []);
 
-  const reloadGeometries = useCallback(async () => {
-    const [list, rawZones] = await Promise.all([getZones(), fetchZonesForMap()]);
-    setZones(list);
-    const polygons: ZonePolygonLayer[] = rawZones
-      .map(mapApiZoneToMapZone)
-      .filter((z): z is NonNullable<typeof z> => z !== null)
-      .map((z) => ({
-        id: z.id,
-        name: z.name,
-        positions: z.polygon,
+  const applyInventory = useCallback(
+    (
+      list: Zone[],
+      containerRows: Container[],
+      rawZones: Awaited<ReturnType<typeof fetchZonesForMap>>,
+      options?: { syncMapGeometry?: boolean; syncMapContainers?: boolean }
+    ) => {
+      const enriched = list.map((zone) => ({
+        ...zone,
+        containersCount: zone.containersCount ?? 0,
       }));
-    setMapPolygons(polygons);
+      setZones(enriched);
+
+      const shouldSyncContainers =
+        options?.syncMapContainers ?? !mapDrawSessionLockRef.current;
+      if (shouldSyncContainers) {
+        setMapContainers(
+          containerRows
+            .map(mapApiContainerForZoneAdmin)
+            .filter((container): container is MapContainerModel => container !== null)
+        );
+      }
+
+      const polygons: ZonePolygonLayer[] = rawZones
+        .map(mapApiZoneToMapZone)
+        .filter((z): z is NonNullable<typeof z> => z !== null)
+        .map((z) => ({
+          id: z.id,
+          name: z.name,
+          positions: z.polygon,
+        }));
+
+      const shouldSyncMap =
+        options?.syncMapGeometry ?? !mapDrawSessionLockRef.current;
+      if (shouldSyncMap) {
+        setMapPolygons((previous) => {
+          const epochById = new Map(
+            previous.map((layer) => [layer.id, layer.geometryEpoch ?? 0])
+          );
+          return polygons.map((layer) => ({
+            ...layer,
+            geometryEpoch: epochById.get(layer.id) ?? 0,
+          }));
+        });
+      }
+
+      return enriched;
+    },
+    []
+  );
+
+  const handleMapDrawSessionLockChange = useCallback((locked: boolean) => {
+    mapDrawSessionLockRef.current = locked;
+    setMapDrawSessionLocked(locked);
   }, []);
+
+  const reloadGeometries = useCallback(
+    async (options?: { silent?: boolean; force?: boolean }) => {
+      if (mapDrawSessionLockRef.current && !options?.force) {
+        return;
+      }
+
+      const [list, rawZones, containerRows] = await Promise.all([
+        getZones(),
+        fetchZonesForMap(),
+        getContainers(),
+      ]);
+      applyInventory(list, containerRows, rawZones, {
+        syncMapGeometry: !mapDrawSessionLockRef.current,
+        syncMapContainers: !mapDrawSessionLockRef.current,
+      });
+    },
+    [applyInventory]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -105,12 +201,137 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     };
   }, [reloadGeometries]);
 
+  const canManageContainers = spatialEditingEnabled;
+
+  useEffect(() => {
+    containersPanelZoneRef.current = containersPanelZone;
+  }, [containersPanelZone]);
+
+  const openContainersPanel = useCallback(
+    async (zone: Zone) => {
+      setContainersPanelZone(zone);
+      setPanelError(null);
+      setPanelContainers([]);
+      setPanelLoading(true);
+      try {
+        const rows = await getContainersByZone(zone.id);
+        setPanelContainers(rows);
+      } catch (err) {
+        setPanelError(
+          err instanceof Error ? err.message : "Impossible de charger les conteneurs."
+        );
+      } finally {
+        setPanelLoading(false);
+      }
+    },
+    [zones]
+  );
+
+  const handleMapContainerSelect = useCallback(
+    (mapContainer: MapContainerModel) => {
+      const zone =
+        (mapContainer.zoneId
+          ? zones.find((item) => item.id === mapContainer.zoneId)
+          : undefined) ??
+        (mapContainer.zoneName
+          ? zones.find((item) => item.name === mapContainer.zoneName)
+          : undefined);
+      if (zone) {
+        void openContainersPanel(zone);
+      }
+    },
+    [zones, openContainersPanel]
+  );
+
+  const closeContainersPanel = useCallback(() => {
+    setContainersPanelZone(null);
+    setPanelContainers([]);
+    setPanelError(null);
+  }, []);
+
+  const handleSaveContainerSerial = useCallback(
+    async (serialNumber: string) => {
+      if (!editingContainer) {
+        return;
+      }
+      try {
+        setContainerEditError(null);
+        setContainerEditSubmitting(true);
+        await updateContainer(editingContainer.id, { serialNumber });
+        setEditingContainer(null);
+        await reloadGeometries();
+        if (containersPanelZone) {
+          const refreshed = await getContainersByZone(containersPanelZone.id);
+          setPanelContainers(refreshed);
+        }
+      } catch (err) {
+        setContainerEditError(
+          err instanceof Error ? err.message : "Impossible de mettre à jour le conteneur."
+        );
+      } finally {
+        setContainerEditSubmitting(false);
+      }
+    },
+    [editingContainer, reloadGeometries, containersPanelZone]
+  );
+
+  const handleDeleteContainer = useCallback(
+    async (container: Container) => {
+      const confirmed = window.confirm(
+        `Supprimer le conteneur « ${container.serialNumber ?? container.id} » ?`
+      );
+      if (!confirmed) {
+        return;
+      }
+      try {
+        setTableMutationError("");
+        await deleteContainer(container.id);
+        await reloadGeometries();
+        if (containersPanelZone) {
+          setPanelContainers((prev) => prev.filter((c) => c.id !== container.id));
+        }
+      } catch (err) {
+        setTableMutationError(
+          err instanceof Error ? err.message : "Impossible de supprimer le conteneur."
+        );
+      }
+    },
+    [reloadGeometries, containersPanelZone]
+  );
+
+  const renderContainerCount = (zone: Zone) => {
+    const count = zone.containersCount ?? 0;
+    const label = `${count} conteneur${count > 1 ? "s" : ""}`;
+
+    if (count === 0) {
+      return (
+        <span
+          className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500"
+        >
+          {label}
+        </span>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 underline-offset-2 transition hover:bg-emerald-200 hover:underline"
+        title="Voir et gérer les conteneurs de ce secteur"
+        onClick={() => void openContainersPanel(zone)}
+      >
+        {label}
+      </button>
+    );
+  };
+
   const totalContainers = useMemo(() => {
     return zones.reduce((sum, zone) => sum + (zone.containersCount || 0), 0);
   }, [zones]);
 
   const handlePolygonSketchCommitted = useCallback(
     (layer: Polygon, discardFromGroup: () => void) => {
+      mapDrawSessionLockRef.current = true;
       pendingPolygonRef.current = layer;
       pendingDiscardRef.current = discardFromGroup;
       setNameModalMountKey((key) => key + 1);
@@ -127,6 +348,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     pendingPolygonRef.current = null;
     pendingDiscardRef.current = null;
     setNameModalOpen(false);
+    mapDrawSessionLockRef.current = false;
   }, [nameModalSubmitting]);
 
   const handleNameModalConfirm = useCallback(
@@ -148,13 +370,15 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         pendingPolygonRef.current = null;
         pendingDiscardRef.current = null;
         setNameModalOpen(false);
-        await reloadGeometries();
+        mapDrawSessionLockRef.current = false;
+        await reloadGeometries({ force: true });
       } catch (err) {
         setMapMutationError(
-          err instanceof Error ? err.message : "Unable to create zone."
+          err instanceof Error ? err.message : "Impossible de créer la zone."
         );
       } finally {
         setNameModalSubmitting(false);
+        mapDrawSessionLockRef.current = false;
       }
     },
     [reloadGeometries]
@@ -173,12 +397,46 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
             description: meta?.description ?? "",
           });
         }
-        await reloadGeometries();
+
+        setMapPolygons((previous) =>
+          previous.map((layer) => {
+            const edit = edits.find((item) => item.zoneId === layer.id);
+            if (!edit) {
+              return layer;
+            }
+            let positions = layer.positions;
+            try {
+              positions = wktPolygonOuterRingToLatLngTuples(edit.wktPolygon);
+            } catch {
+              //
+            }
+            return {
+              ...layer,
+              positions,
+              geometryEpoch: (layer.geometryEpoch ?? 0) + 1,
+            };
+          })
+        );
+
+        const list = await getZones();
+        setZones((previous) =>
+          previous.map((zone) => {
+            const refreshed = list.find((item) => item.id === zone.id);
+            if (!refreshed) {
+              return zone;
+            }
+            return {
+              ...zone,
+              ...refreshed,
+              containersCount: refreshed.containersCount ?? zone.containersCount ?? 0,
+            };
+          })
+        );
       } catch (err) {
         setMapMutationError(
-          err instanceof Error ? err.message : "Unable to update zone geometry."
+          err instanceof Error ? err.message : "Impossible de mettre à jour le contour."
         );
-        await reloadGeometries();
+        await reloadGeometries({ force: true });
       }
     },
     [reloadGeometries]
@@ -189,15 +447,15 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
       try {
         setMapMutationError("");
         for (const id of zoneIds) {
-          await deleteZone(id);
+          await deleteZone(id, { cascade: true });
           removeZoneFromState(id);
         }
-        await reloadGeometries();
+        await reloadGeometries({ force: true });
       } catch (err) {
         setMapMutationError(
           err instanceof Error ? err.message : "Impossible de supprimer la zone."
         );
-        await reloadGeometries();
+        await reloadGeometries({ force: true });
       }
     },
     [reloadGeometries, removeZoneFromState]
@@ -232,30 +490,101 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     [editingZone, reloadGeometries]
   );
 
-  const handleRequestDeleteZone = useCallback(
-    async (zone: Zone) => {
-      const confirmed = window.confirm(
-        `Supprimer la zone « ${zone.name} » ? Cette action est irréversible (bloquée si des conteneurs y sont encore liés).`
-      );
-      if (!confirmed) {
-        return;
-      }
-      try {
-        setTableMutationError("");
-        await deleteZone(zone.id);
-        removeZoneFromState(zone.id);
-        await reloadGeometries();
-      } catch (err) {
-        setTableMutationError(
-          err instanceof Error ? err.message : "Impossible de supprimer la zone."
+  const handleRequestDeleteZone = useCallback((zone: Zone) => {
+    setZoneToDelete(zone);
+    setZoneDeletePreview(null);
+    setZoneDeletePreviewError(null);
+    setZoneDeletePreviewLoading(true);
+    void getZoneDeletionPreview(zone.id)
+      .then((preview) => {
+        setZoneDeletePreview(preview);
+      })
+      .catch((err) => {
+        setZoneDeletePreviewError(
+          err instanceof Error ? err.message : "Impossible d'analyser les éléments liés."
         );
-      }
-    },
-    [reloadGeometries, removeZoneFromState]
-  );
+      })
+      .finally(() => {
+        setZoneDeletePreviewLoading(false);
+      });
+  }, []);
+
+  const handleCloseZoneDeleteModal = useCallback(() => {
+    if (zoneDeleteSubmitting) {
+      return;
+    }
+    setZoneToDelete(null);
+    setZoneDeletePreview(null);
+    setZoneDeletePreviewError(null);
+  }, [zoneDeleteSubmitting]);
+
+  const handleConfirmZoneDelete = useCallback(async () => {
+    if (!zoneToDelete) {
+      return;
+    }
+    const cascade =
+      zoneDeletePreview !== null &&
+      (zoneDeletePreview.challengeCount > 0 ||
+        zoneDeletePreview.containerCount > 0 ||
+        zoneDeletePreview.reportCount > 0);
+
+    try {
+      setTableMutationError("");
+      setZoneDeleteSubmitting(true);
+      await deleteZone(zoneToDelete.id, { cascade });
+      removeZoneFromState(zoneToDelete.id);
+      setZoneToDelete(null);
+      setZoneDeletePreview(null);
+      await reloadGeometries();
+    } catch (err) {
+      setTableMutationError(
+        err instanceof Error ? err.message : "Impossible de supprimer la zone."
+      );
+    } finally {
+      setZoneDeleteSubmitting(false);
+    }
+  }, [zoneToDelete, zoneDeletePreview, reloadGeometries, removeZoneFromState]);
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
+      <ZoneDeleteConfirmModal
+        isOpen={zoneToDelete !== null}
+        preview={zoneDeletePreview}
+        isLoadingPreview={zoneDeletePreviewLoading}
+        isDeleting={zoneDeleteSubmitting}
+        previewError={zoneDeletePreviewError}
+        onConfirmCascade={handleConfirmZoneDelete}
+        onCancel={handleCloseZoneDeleteModal}
+      />
+
+      <ContainerSerialEditModal
+        container={editingContainer}
+        isOpen={editingContainer !== null}
+        isSubmitting={containerEditSubmitting}
+        error={containerEditError}
+        onClose={() => {
+          if (!containerEditSubmitting) {
+            setEditingContainer(null);
+            setContainerEditError(null);
+          }
+        }}
+        onSave={(serial) => void handleSaveContainerSerial(serial)}
+      />
+
+      <ZoneContainersPanel
+        zone={containersPanelZone}
+        containers={panelContainers}
+        isLoading={panelLoading}
+        error={panelError}
+        canManage={canManageContainers}
+        onClose={closeContainersPanel}
+        onEdit={(container) => {
+          setContainerEditError(null);
+          setEditingContainer(container);
+        }}
+        onDelete={(container) => void handleDeleteContainer(container)}
+      />
+
       {editingZone ? (
         <ZoneDetailsEditModal
           key={editingZone.id}
@@ -293,10 +622,24 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
             Gère les zones de collecte et consulte leur répartition.
           </p>
           {spatialEditingEnabled ? (
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Tracez un polygone avec la barre d&apos;outils en haut à gauche, puis validez le nom du secteur.
-              Édition et suppression disponibles via les icônes feuille / corbeille.
-            </p>
+            <ul className="mt-2 max-w-2xl list-disc space-y-1 pl-5 text-sm text-slate-600">
+              <li>
+                <strong className="text-slate-800">Dessiner un secteur</strong> : tracez le contour, puis
+                nommez le secteur dans la fenêtre qui s&apos;ouvre.
+              </li>
+              <li>
+                <strong className="text-slate-800">Modifier les contours</strong> : déplacez les sommets, puis
+                cliquez sur « Enregistrer ».
+              </li>
+              <li>
+                <strong className="text-slate-800">Supprimer un secteur</strong> : sélectionnez-le sur la carte,
+                puis validez la suppression.
+              </li>
+              <li>
+                Les pastilles colorées sont les conteneurs (clic pour la fiche) ; le nombre dans le tableau
+                ouvre la liste complète du secteur.
+              </li>
+            </ul>
           ) : (
             <p className="mt-2 max-w-2xl text-sm text-amber-800">
               Consultation seule : les outils de dessin sont réservés aux profils administrateur et gestionnaire.
@@ -340,7 +683,12 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         {!loading && !error ? (
           <ZoneManagementMap
             initialPolygons={mapPolygons}
+            mapContainers={mapContainers}
+            viewerRole={viewerRole}
             spatialEditingEnabled={spatialEditingEnabled}
+            mapDrawSessionLocked={mapDrawSessionLocked}
+            onMapDrawSessionLockChange={handleMapDrawSessionLockChange}
+            onMapContainerSelect={handleMapContainerSelect}
             onPolygonSketchCommitted={handlePolygonSketchCommitted}
             {...(spatialEditingEnabled
               ? {
@@ -368,11 +716,11 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         {[
           { label: "Total zones", value: zones.length, color: "#0ea5e9" },
           {
-            label: "Avec containers",
+            label: "Avec conteneurs",
             value: zones.filter((zone) => (zone.containersCount || 0) > 0).length,
             color: "#16a34a",
           },
-          { label: "Total containers", value: totalContainers, color: "#ca8a04" },
+          { label: "Total conteneurs", value: totalContainers, color: "#ca8a04" },
         ].map((item) => (
           <div
             key={item.label}
@@ -472,7 +820,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
                 <span>Zone</span>
                 <span>Ville</span>
                 <span>Description</span>
-                <span>Containers</span>
+                <span>Conteneurs</span>
               </div>
 
               {zones.map((zone) => (
@@ -530,31 +878,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
 
                   <span style={{ color: "#64748b" }}>{zone.description || "Aucune description"}</span>
 
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      background:
-                        (zone.containersCount || 0) > 0 ? "#dcfce7" : "#f1f5f9",
-                      color: (zone.containersCount || 0) > 0 ? "#16a34a" : "#94a3b8",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      padding: "4px 10px",
-                      borderRadius: "999px",
-                      width: "fit-content",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: (zone.containersCount || 0) > 0 ? "#16a34a" : "#94a3b8",
-                      }}
-                    />
-                    {zone.containersCount || 0}
-                  </span>
+                  {renderContainerCount(zone)}
                 </div>
               ))}
             </div>
@@ -606,32 +930,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
                         </div>
                       </div>
 
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px",
-                          background:
-                            (zone.containersCount || 0) > 0 ? "#dcfce7" : "#f1f5f9",
-                          color: (zone.containersCount || 0) > 0 ? "#16a34a" : "#94a3b8",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: "6px",
-                            height: "6px",
-                            borderRadius: "50%",
-                            background:
-                              (zone.containersCount || 0) > 0 ? "#16a34a" : "#94a3b8",
-                          }}
-                        />
-                        {zone.containersCount || 0} container
-                        {(zone.containersCount || 0) > 1 ? "s" : ""}
-                      </span>
+                      {renderContainerCount(zone)}
                     </div>
 
                     <p style={{ margin: "0 0 4px", color: "#64748b", fontSize: "13px" }}>

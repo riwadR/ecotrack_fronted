@@ -21,24 +21,11 @@ export type MapPageProps = {
   viewerRole: Role;
 };
 
-function operationalNoticeForRole(role: Role): string | null {
-  if (role === "AGENT") {
-    return "Agent view: daily tour route and numbered stops will load here once the tour API is connected. The map is shown without bulk containers or zones.";
-  }
-  if (role === "CITIZEN") {
-    return "Citizen view: nearby prioritization and public collection schedules will appear here in a future release. All published containers are shown for now.";
-  }
-  return null;
-}
-
 /**
  * Dashboard map route shell: heading, legend, and client-only Leaflet surface.
  */
 export default function MapPage({ viewerRole }: MapPageProps) {
-  const { containers, zones, isLoading, error, refetch, isAgentRouteMode, citizenAugments } = useMapData(viewerRole);
-
-  const notice = operationalNoticeForRole(viewerRole);
-  const schedulesPreviewCount = citizenAugments.collectionSchedules.length;
+  const { containers, zones, isLoading, error, refetch } = useMapData(viewerRole);
 
   return (
     <div className="flex flex-col gap-6">
@@ -51,8 +38,6 @@ export default function MapPage({ viewerRole }: MapPageProps) {
           {viewerRole === "ADMIN" || viewerRole === "MANAGER"
             ? " Vue complète : tous les conteneurs et toutes les zones."
             : null}
-          {isAgentRouteMode ? " Mode tournée (aperçu) : données d'itinéraire à brancher." : null}
-          {viewerRole === "CITIZEN" ? " Mode citoyen : conteneurs (filtre proximité à venir)." : null}
         </p>
       </header>
 
@@ -94,11 +79,6 @@ export default function MapPage({ viewerRole }: MapPageProps) {
             {"> 90 %"}
           </li>
         </ul>
-        {viewerRole === "CITIZEN" && schedulesPreviewCount === 0 ? (
-          <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-            Horaires de collecte : structure prête côté client (collectionSchedules vide) — branchement API à venir.
-          </p>
-        ) : null}
       </section>
 
       {isLoading ? (
@@ -110,12 +90,7 @@ export default function MapPage({ viewerRole }: MapPageProps) {
           Chargement des conteneurs et zones…
         </div>
       ) : (
-        <InteractiveMap
-          containers={containers}
-          zones={zones}
-          viewerRole={viewerRole}
-          operationalNotice={notice}
-        />
+        <InteractiveMap containers={containers} zones={zones} viewerRole={viewerRole} />
       )}
     </div>
   );

@@ -1,11 +1,15 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { MapContainer, Polygon, TileLayer, Tooltip } from "react-leaflet";
+import type { PathOptions } from "leaflet";
+import { Fragment } from "react";
+import { MapContainer, Polygon, TileLayer } from "react-leaflet";
 import type { Container, Zone } from "@/models/map";
 import type { Role } from "@/models/user";
 import ContainerMarker from "./ContainerMarker";
+import LocateMeControl from "./LocateMeControl";
 import MapResizeBridge from "./MapResizeBridge";
+import ZoneNameLabel from "./ZoneNameLabel";
 
 /** Default viewport: Paris metropolitan area. */
 export const DEFAULT_MAP_CENTER: [number, number] = [48.8566, 2.3522];
@@ -31,16 +35,27 @@ export type InteractiveMapProps = {
   /** Parent handler when a marker is opened or clicked. */
   onContainerSelect?: (container: Container) => void;
   onCreateRoute?: (containerId: string) => void;
-  /** Hide zone polygons when only containers matter (signalements page). */
+  /** Hide zone polygons when only containers matter. */
   showZones?: boolean;
+  /** Override default zone polygon styling (e.g. subtle citizen boundaries). */
+  zonePathOptions?: PathOptions;
+  /** Show a control that flies the map to the user's geolocation. */
+  showLocateMe?: boolean;
 };
 
-const ZONE_PATH_OPTIONS = {
+const OPERATIONAL_ZONE_PATH_OPTIONS: PathOptions = {
   color: "#0ea5e9",
   weight: 2,
   fillColor: "#38bdf8",
   fillOpacity: 0.18,
-} as const;
+};
+
+export const CITIZEN_ZONE_PATH_OPTIONS: PathOptions = {
+  color: "green",
+  weight: 1,
+  fillColor: "green",
+  fillOpacity: 0.1,
+};
 
 /**
  * Leaflet map with OSM tiles, collection-zone polygons, and container markers.
@@ -58,6 +73,8 @@ export default function InteractiveMap({
   onContainerSelect,
   onCreateRoute,
   showZones = true,
+  zonePathOptions = OPERATIONAL_ZONE_PATH_OPTIONS,
+  showLocateMe = true,
 }: InteractiveMapProps) {
   const handleReportIssue = (containerId: string) => {
     onReportIssue?.(containerId);
@@ -80,23 +97,25 @@ export default function InteractiveMap({
         <MapContainer
           center={center}
           zoom={zoom}
-          className="h-full w-full rounded-xl [&_.leaflet-control-attribution]:text-[10px]"
+          className="h-full w-full rounded-xl [&_.leaflet-control-attribution]:text-[10px] [&_.ecotrack-locate-wrapper]:mr-3 [&_.ecotrack-locate-wrapper]:mt-3"
           scrollWheelZoom
         >
           <MapResizeBridge />
+          {showLocateMe ? <LocateMeControl /> : null}
           <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
           {showZones
             ? zones.map((zone) => (
-                <Polygon key={zone.id} positions={zone.polygon} pathOptions={{ ...ZONE_PATH_OPTIONS }}>
-                  <Tooltip direction="center" opacity={1}>
-                    <span className="text-sm font-semibold text-slate-800">{zone.name}</span>
-                  </Tooltip>
-                </Polygon>
+                <Fragment key={zone.id}>
+                  <Polygon
+                    positions={zone.polygon}
+                    pathOptions={{ ...zonePathOptions, interactive: false }}
+                  />
+                  <ZoneNameLabel name={zone.name} polygon={zone.polygon} />
+                </Fragment>
               ))
             : null}
           {containers.map((container) => (
             <ContainerMarker
-              key={container.id}
               container={container}
               viewerRole={viewerRole}
               isSelected={selectedContainerId === container.id}

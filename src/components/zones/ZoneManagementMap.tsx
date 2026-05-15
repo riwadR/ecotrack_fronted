@@ -3,8 +3,13 @@
 import "leaflet/dist/leaflet.css";
 import { useCallback, useRef } from "react";
 import L from "leaflet";
-import { FeatureGroup, MapContainer, Polygon, TileLayer, Tooltip } from "react-leaflet";
+import { FeatureGroup, MapContainer, TileLayer } from "react-leaflet";
+import ManagedZonePolygons from "@/components/zones/ManagedZonePolygons";
+import type { Container as MapContainerModel } from "@/models/map";
+import type { Role } from "@/models/user";
+import ContainerMarker from "@/components/map/ContainerMarker";
 import MapResizeBridge from "@/components/map/MapResizeBridge";
+import ZoneNameLabel from "@/components/map/ZoneNameLabel";
 import PolygonDrawController, {
   type PersistedPolygonEdit,
 } from "@/components/zones/PolygonDrawController";
@@ -21,6 +26,8 @@ export type ZonePolygonLayer = {
   id: string;
   name: string;
   positions: [number, number][];
+  /** Bumped after a saved geometry edit so Leaflet.draw gets a fresh polygon layer. */
+  geometryEpoch?: number;
 };
 
 const EXISTING_ZONE_STYLE = {
@@ -32,10 +39,15 @@ const EXISTING_ZONE_STYLE = {
 
 export type ZoneManagementMapProps = {
   initialPolygons: ZonePolygonLayer[];
+  mapContainers?: MapContainerModel[];
+  viewerRole: Role;
   spatialEditingEnabled: boolean;
+  mapDrawSessionLocked?: boolean;
+  onMapDrawSessionLockChange?: (locked: boolean) => void;
   onPolygonSketchCommitted: (layer: L.Polygon, discardFromGroup: () => void) => void;
   onPersistedPolygonEditsCommitted?: (edits: PersistedPolygonEdit[]) => Promise<void>;
   onPersistedPolygonDeletesCommitted?: (zoneIds: string[]) => Promise<void>;
+  onMapContainerSelect?: (container: MapContainerModel) => void;
 };
 
 /**
@@ -43,10 +55,15 @@ export type ZoneManagementMapProps = {
  */
 export default function ZoneManagementMap({
   initialPolygons,
+  mapContainers = [],
+  viewerRole,
   spatialEditingEnabled,
+  mapDrawSessionLocked = false,
+  onMapDrawSessionLockChange,
   onPolygonSketchCommitted,
   onPersistedPolygonEditsCommitted,
   onPersistedPolygonDeletesCommitted,
+  onMapContainerSelect,
 }: ZoneManagementMapProps) {
   const editableFeatureGroupRef = useRef<L.FeatureGroup | null>(null);
 
@@ -68,31 +85,29 @@ export default function ZoneManagementMap({
         <MapResizeBridge />
         <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
         <FeatureGroup ref={editableFeatureGroupRef}>
-          {initialPolygons.map((zone) => (
-            <Polygon
-              key={zone.id}
-              positions={zone.positions}
-              pathOptions={{ ...EXISTING_ZONE_STYLE }}
-              eventHandlers={{
-                add(e) {
-                  const layer = e.target;
-                  if (layer instanceof L.Polygon) {
-                    (layer as L.Polygon & { ecotrackZoneId?: string }).ecotrackZoneId = zone.id;
-                  }
-                },
-              }}
-            >
-              <Tooltip direction="center" opacity={1}>
-                <span className="text-xs font-semibold text-slate-800">{zone.name}</span>
-              </Tooltip>
-            </Polygon>
-          ))}
+          <ManagedZonePolygons
+            zones={initialPolygons}
+            featureGroupRef={editableFeatureGroupRef}
+            pathOptions={{ ...EXISTING_ZONE_STYLE }}
+            syncSuspended={mapDrawSessionLocked}
+          />
         </FeatureGroup>
+        {initialPolygons.map((zone) => (
+          <ZoneNameLabel key={`label-${zone.id}`} name={zone.name} polygon={zone.positions} />
+        ))}
+        {mapContainers.map((container) => (
+          <ContainerMarker
+            key={`${container.id}-${container.fillLevelPercent}`}
+            container={container}
+            viewerRole={viewerRole}
+            onContainerSelect={onMapContainerSelect}
+          />
+        ))}
         {spatialEditingEnabled ? (
           <PolygonDrawController
             spatialEditingEnabled={spatialEditingEnabled}
             editableFeatureGroupRef={editableFeatureGroupRef}
-            editableLayerRevision={initialPolygons.length}
+            onMapDrawSessionLockChange={onMapDrawSessionLockChange}
             onPolygonSketchCommitted={handleSketchCommitted}
             onPersistedPolygonEditsCommitted={onPersistedPolygonEditsCommitted}
             onPersistedPolygonDeletesCommitted={onPersistedPolygonDeletesCommitted}

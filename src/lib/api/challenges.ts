@@ -36,6 +36,8 @@ export type ChallengeCreatePayload = {
   zoneId: string;
 };
 
+export type ChallengeUpdatePayload = ChallengeCreatePayload;
+
 export type ChallengeContribution = {
   reportId: string;
   occurredAt: string;
@@ -110,5 +112,28 @@ export async function createChallenge(payload: ChallengeCreatePayload): Promise<
     return data;
   } catch (error) {
     throw toApiError(error, "Impossible de créer le défi.");
+  }
+}
+
+export async function updateChallenge(
+  id: string,
+  payload: ChallengeUpdatePayload
+): Promise<Challenge> {
+  try {
+    const { data } = await backendApiClient.put<Challenge>(
+      `challenges/${encodeURIComponent(id)}`,
+      payload
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de mettre à jour le défi.");
+  }
+}
+
+export async function deleteChallenge(id: string): Promise<void> {
+  try {
+    await backendApiClient.delete(`challenges/${encodeURIComponent(id)}`);
+  } catch (error) {
+    throw toApiError(error, "Impossible de supprimer le défi.");
   }
 }

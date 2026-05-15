@@ -16,6 +16,7 @@ export interface Container {
   lastMeasurementAt: string;
   /** Hardware serial when provided by the containers API (issue reporting). */
   serialNumber?: string;
+  zoneId?: string;
   zoneName?: string;
   status?: ContainerStatus;
   containerType?: ContainerType;

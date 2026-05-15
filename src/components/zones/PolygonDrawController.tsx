@@ -6,6 +6,7 @@ import L from "leaflet";
 import "leaflet-draw";
 import "leaflet-draw/dist/leaflet.draw.css";
 import { useMap } from "react-leaflet";
+import { configureLeafletDrawFrench } from "@/lib/zones/leafletDrawFrench";
 import { getPolygonOuterRingLatLng } from "@/lib/zones/polygonGeoUtils";
 import { latLngRingToPolygonWkt } from "@/lib/zones/wktFromLeaflet";
 
@@ -13,6 +14,27 @@ export type PersistedPolygonEdit = {
   zoneId: string;
   wktPolygon: string;
 };
+
+function disableActiveDrawMode(map: L.Map, drawControl: L.Control.Draw) {
+  type DrawToolbar = {
+    _modes?: Record<string, { handler?: { disable?: () => void; enabled?: () => boolean } }>;
+  };
+  type DrawControlInternals = L.Control.Draw & { _toolbars?: { edit?: DrawToolbar } };
+
+  const toolbars = (drawControl as DrawControlInternals)._toolbars;
+  const editHandler = toolbars?.edit?._modes?.edit?.handler;
+  if (editHandler?.enabled?.()) {
+    editHandler.disable?.();
+  }
+
+  const removeHandler = toolbars?.edit?._modes?.remove?.handler;
+  if (removeHandler?.enabled?.()) {
+    removeHandler.disable?.();
+  }
+
+  map.fire(L.Draw.Event.EDITSTOP);
+  map.fire(L.Draw.Event.DELETESTOP);
+}
 
 function readZoneIdFromLayer(layer: L.Layer): string | undefined {
   if ("ecotrackZoneId" in layer) {
@@ -25,7 +47,8 @@ function readZoneIdFromLayer(layer: L.Layer): string | undefined {
 export type PolygonDrawControllerProps = {
   spatialEditingEnabled: boolean;
   editableFeatureGroupRef: RefObject<L.FeatureGroup | null>;
-  editableLayerRevision: number;
+  /** While true, parent must not refresh map polygons from the API (would cancel Leaflet.draw). */
+  onMapDrawSessionLockChange?: (locked: boolean) => void;
   onPolygonSketchCommitted: (layer: L.Polygon, discardFromGroup: () => void) => void;
   onPersistedPolygonEditsCommitted?: (edits: PersistedPolygonEdit[]) => Promise<void>;
   onPersistedPolygonDeletesCommitted?: (zoneIds: string[]) => Promise<void>;
@@ -37,7 +60,7 @@ export type PolygonDrawControllerProps = {
 export default function PolygonDrawController({
   spatialEditingEnabled,
   editableFeatureGroupRef,
-  editableLayerRevision,
+  onMapDrawSessionLockChange,
   onPolygonSketchCommitted,
   onPersistedPolygonEditsCommitted,
   onPersistedPolygonDeletesCommitted,
@@ -54,12 +77,20 @@ export default function PolygonDrawController({
       return;
     }
 
+    configureLeafletDrawFrench();
+
     const drawControl = new L.Control.Draw({
       position: "topleft",
       draw: {
         polygon: {
           allowIntersection: false,
           showArea: true,
+          shapeOptions: {
+            color: "#0369a1",
+            weight: 2,
+            fillColor: "#0ea5e9",
+            fillOpacity: 0.15,
+          },
         },
         polyline: false,
         rectangle: false,
@@ -74,6 +105,20 @@ export default function PolygonDrawController({
     });
 
     map.addControl(drawControl);
+
+    let persistingMutation = false;
+
+    const setMapLocked = (locked: boolean) => {
+      onMapDrawSessionLockChange?.(locked);
+    };
+
+    const handleDrawSessionStart = () => setMapLocked(true);
+
+    const handleDrawSessionEnd = () => {
+      if (!persistingMutation) {
+        setMapLocked(false);
+      }
+    };
 
     const handleCreated = (e: L.LeafletEvent) => {
       const created = e as L.DrawEvents.Created;
@@ -109,10 +154,15 @@ export default function PolygonDrawController({
         }
       });
       if (edits.length > 0) {
+        persistingMutation = true;
         try {
           await onPersistedPolygonEditsCommitted(edits);
         } catch {
           // Errors are surfaced by the parent handler; avoid unhandled rejections from Leaflet events.
+        } finally {
+          persistingMutation = false;
+          disableActiveDrawMode(map, drawControl);
+          setMapLocked(false);
         }
       }
     };
@@ -130,29 +180,47 @@ export default function PolygonDrawController({
         }
       });
       if (zoneIds.length > 0) {
+        persistingMutation = true;
         try {
           await onPersistedPolygonDeletesCommitted(zoneIds);
         } catch {
           //
+        } finally {
+          persistingMutation = false;
+          disableActiveDrawMode(map, drawControl);
+          setMapLocked(false);
         }
       }
     };
 
+    map.on(L.Draw.Event.DRAWSTART, handleDrawSessionStart);
+    map.on(L.Draw.Event.DRAWSTOP, handleDrawSessionEnd);
+    map.on(L.Draw.Event.EDITSTART, handleDrawSessionStart);
+    map.on(L.Draw.Event.EDITSTOP, handleDrawSessionEnd);
+    map.on(L.Draw.Event.DELETESTART, handleDrawSessionStart);
+    map.on(L.Draw.Event.DELETESTOP, handleDrawSessionEnd);
     map.on(L.Draw.Event.CREATED, handleCreated);
     map.on(L.Draw.Event.EDITED, handleEdited);
     map.on(L.Draw.Event.DELETED, handleDeleted);
 
     return () => {
+      map.off(L.Draw.Event.DRAWSTART, handleDrawSessionStart);
+      map.off(L.Draw.Event.DRAWSTOP, handleDrawSessionEnd);
+      map.off(L.Draw.Event.EDITSTART, handleDrawSessionStart);
+      map.off(L.Draw.Event.EDITSTOP, handleDrawSessionEnd);
+      map.off(L.Draw.Event.DELETESTART, handleDrawSessionStart);
+      map.off(L.Draw.Event.DELETESTOP, handleDrawSessionEnd);
       map.off(L.Draw.Event.CREATED, handleCreated);
       map.off(L.Draw.Event.EDITED, handleEdited);
       map.off(L.Draw.Event.DELETED, handleDeleted);
       map.removeControl(drawControl);
+      setMapLocked(false);
     };
   }, [
     map,
     spatialEditingEnabled,
     editableFeatureGroupRef,
-    editableLayerRevision,
+    onMapDrawSessionLockChange,
     onPolygonSketchCommitted,
     onPersistedPolygonEditsCommitted,
     onPersistedPolygonDeletesCommitted,

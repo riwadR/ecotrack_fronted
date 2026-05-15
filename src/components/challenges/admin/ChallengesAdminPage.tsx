@@ -1,10 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import { useChallengeClock } from "@/hooks/useChallengeClock";
 import { usePeriodicRefresh } from "@/hooks/usePeriodicRefresh";
 import type { Challenge, ChallengeCreatePayload } from "@/lib/api/challenges";
-import { createChallenge, getChallenges } from "@/lib/api/challenges";
+import {
+  createChallenge,
+  deleteChallenge,
+  getChallenges,
+  updateChallenge,
+} from "@/lib/api/challenges";
+import { CrossDeleteIcon, PencilIcon } from "@/components/zones/zoneTableIcons";
 import type { Zone } from "@/models/zone";
 import { getZones } from "@/services/api/zones";
 import {
@@ -33,6 +39,7 @@ export default function ChallengesAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
@@ -82,6 +89,46 @@ export default function ChallengesAdminPage() {
     }
   };
 
+  const handleUpdate = async (payload: ChallengeCreatePayload) => {
+    if (!editingChallenge) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const updated = await updateChallenge(editingChallenge.id, payload);
+      setChallenges((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item))
+      );
+      setEditingChallenge(null);
+      setToastMessage("Le défi a été mis à jour.");
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Impossible de mettre à jour le défi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRequestDelete = (challenge: Challenge, event: MouseEvent) => {
+    event.stopPropagation();
+    const confirmed = window.confirm(
+      `Supprimer le défi « ${challenge.title} » ? Les participations seront également retirées.`
+    );
+    if (!confirmed) {
+      return;
+    }
+    void deleteChallenge(challenge.id)
+      .then(() => {
+        setChallenges((current) => current.filter((item) => item.id !== challenge.id));
+        if (selectedChallenge?.id === challenge.id) {
+          setSelectedChallenge(null);
+        }
+        setToastMessage("Le défi a été supprimé.");
+      })
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : "Impossible de supprimer le défi.");
+      });
+  };
+
   return (
     <div className="grid gap-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -124,6 +171,7 @@ export default function ChallengesAdminPage() {
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
               <tr>
+                <th className="px-4 py-3 w-24">Actions</th>
                 <th className="px-4 py-3">Titre</th>
                 <th className="px-4 py-3">Zone</th>
                 <th className="px-4 py-3">Dates</th>
@@ -146,6 +194,29 @@ export default function ChallengesAdminPage() {
                     className="cursor-pointer text-slate-800 transition hover:bg-slate-50"
                     onClick={() => setSelectedChallenge(challenge)}
                   >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"
+                          aria-label={`Modifier ${challenge.title}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setEditingChallenge(challenge);
+                          }}
+                        >
+                          <PencilIcon />
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 shadow-sm hover:bg-red-50"
+                          aria-label={`Supprimer ${challenge.title}`}
+                          onClick={(event) => handleRequestDelete(challenge, event)}
+                        >
+                          <CrossDeleteIcon />
+                        </button>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 font-medium">{challenge.title}</td>
                     <td className="px-4 py-3">{challenge.zone.name}</td>
                     <td className="px-4 py-3 text-slate-600">
@@ -185,6 +256,19 @@ export default function ChallengesAdminPage() {
         onCancel={() => {
           if (!isSubmitting) {
             setIsModalOpen(false);
+          }
+        }}
+      />
+
+      <ChallengeCreateModal
+        isOpen={editingChallenge !== null}
+        zones={zones}
+        editingChallenge={editingChallenge}
+        isSubmitting={isSubmitting}
+        onConfirm={handleUpdate}
+        onCancel={() => {
+          if (!isSubmitting) {
+            setEditingChallenge(null);
           }
         }}
       />

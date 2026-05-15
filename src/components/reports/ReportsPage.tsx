@@ -2,12 +2,18 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Container } from "@/models/map";
+import type { Container, Zone } from "@/models/map";
 import type { Role } from "@/models/user";
+import { mapApiZoneToMapZone } from "@/lib/map/mapDtoMappers";
 import { mapApiContainerToReportMapContainer } from "@/lib/reports/reportContainerMapper";
+import { CITIZEN_ZONE_PATH_OPTIONS } from "@/components/map/InteractiveMap";
+import { fetchZonesForMap } from "@/services/api/mapDataSource";
 import { getContainers } from "@/services/api/containers";
 import { createReport } from "@/services/api/reports";
+import { usePeriodicRefresh } from "@/hooks/usePeriodicRefresh";
 import ContainerSearchCombobox from "@/components/reports/ContainerSearchCombobox";
+
+const MAP_CONTAINERS_REFRESH_MS = 15_000;
 import ContainerDetailsDrawer from "@/components/reports/ContainerDetailsDrawer";
 import ReportFormModal from "@/components/reports/ReportFormModal";
 import CitizenReportSuccessModal from "@/components/reports/CitizenReportSuccessModal";
@@ -47,8 +53,10 @@ function containerMatchesSearch(container: Container, term: string): boolean {
  */
 export default function ReportsPage({ viewerRole }: ReportsPageProps) {
   const [containers, setContainers] = useState<Container[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const showCitizenMapFeatures = viewerRole === "CITIZEN";
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContainer, setSelectedContainer] = useState<Container | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -58,26 +66,48 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
   const [citizenSuccessOpen, setCitizenSuccessOpen] = useState(false);
   const [agentToastMessage, setAgentToastMessage] = useState<string | null>(null);
 
-  const loadContainers = useCallback(async () => {
-    setLoadError(null);
-    setIsLoading(true);
+  const loadMapData = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoadError(null);
+      setIsLoading(true);
+    }
     try {
-      const rows = await getContainers();
+      if (options?.silent) {
+        const rows = await getContainers();
+        const mapped = rows
+          .map(mapApiContainerToReportMapContainer)
+          .filter((c): c is Container => c !== null);
+        setContainers(mapped);
+        return;
+      }
+
+      const [rows, rawZones] = await Promise.all([getContainers(), fetchZonesForMap()]);
       const mapped = rows
         .map(mapApiContainerToReportMapContainer)
         .filter((c): c is Container => c !== null);
+      const mappedZones = rawZones.map(mapApiZoneToMapZone).filter((z): z is Zone => z !== null);
       setContainers(mapped);
+      setZones(mappedZones);
     } catch (err) {
-      setContainers([]);
-      setLoadError(err instanceof Error ? err.message : "Impossible de charger les conteneurs.");
+      if (!options?.silent) {
+        setContainers([]);
+        setZones([]);
+        setLoadError(err instanceof Error ? err.message : "Impossible de charger les conteneurs.");
+      }
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
+  const silentRefresh = useCallback(() => loadMapData({ silent: true }), [loadMapData]);
+
   useEffect(() => {
-    void loadContainers();
-  }, [loadContainers]);
+    void loadMapData();
+  }, [loadMapData]);
+
+  usePeriodicRefresh(silentRefresh, { intervalMs: MAP_CONTAINERS_REFRESH_MS });
 
   const normalizedSearch = normalizeSearchTerm(searchTerm);
 
@@ -85,6 +115,13 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
     () => containers.filter((c) => containerMatchesSearch(c, normalizedSearch)),
     [containers, normalizedSearch]
   );
+
+  const activeSelectedContainer = useMemo(() => {
+    if (!selectedContainer) {
+      return null;
+    }
+    return containers.find((c) => c.id === selectedContainer.id) ?? selectedContainer;
+  }, [containers, selectedContainer]);
 
   const openContainerDetails = useCallback((container: Container) => {
     setSelectedContainer(container);
@@ -150,10 +187,10 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Signalements</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Carte & Signalements</h1>
         <p className="text-sm text-slate-600">
-          Sélectionnez un conteneur sur la carte ou via la recherche, puis décrivez le problème
-          constaté sur le terrain.
+          Consultez les secteurs, sélectionnez un conteneur sur la carte ou via la recherche, puis
+          décrivez le problème constaté sur le terrain.
         </p>
       </header>
 
@@ -166,7 +203,7 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
           <button
             type="button"
             className="self-start rounded-md bg-red-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800"
-            onClick={() => void loadContainers()}
+            onClick={() => void loadMapData()}
           >
             Réessayer
           </button>
@@ -193,8 +230,10 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
           ) : (
             <InteractiveMap
               containers={filteredContainers}
+              zones={zones}
               viewerRole={viewerRole}
-              showZones={false}
+              showZones
+              zonePathOptions={showCitizenMapFeatures ? CITIZEN_ZONE_PATH_OPTIONS : undefined}
               selectedContainerId={selectedContainer?.id ?? null}
               onContainerSelect={openContainerDetails}
               onReportIssue={openReportForm}
@@ -212,7 +251,7 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
             onClick={closeDrawer}
           />
           <ContainerDetailsDrawer
-            container={selectedContainer}
+            container={activeSelectedContainer}
             onClose={closeDrawer}
             onReport={openReportForm}
           />
@@ -220,9 +259,9 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
       ) : null}
 
       <ReportFormModal
-        key={selectedContainer?.id ?? "report-form"}
+        key={activeSelectedContainer?.id ?? "report-form"}
         isOpen={isFormOpen}
-        container={selectedContainer}
+        container={activeSelectedContainer}
         isSubmitting={isSubmitting}
         submitError={submitError}
         onClose={closeReportForm}

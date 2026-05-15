@@ -66,9 +66,47 @@ export async function patchZoneDetails(
   }
 }
 
-export async function deleteZone(id: string): Promise<void> {
+export type ZoneDeletionChallengeItem = {
+  id: string;
+  title: string;
+};
+
+export type ZoneDeletionContainerItem = {
+  id: string;
+  serialNumber: string;
+};
+
+export type ZoneDeletionPreview = {
+  zoneId: string;
+  zoneName: string;
+  challengeCount: number;
+  containerCount: number;
+  reportCount: number;
+  challenges: ZoneDeletionChallengeItem[];
+  containers: ZoneDeletionContainerItem[];
+};
+
+export async function getZoneDeletionPreview(id: string): Promise<ZoneDeletionPreview> {
   try {
-    await backendApiClient.delete(`zones/${encodeURIComponent(id)}`);
+    const { data } = await backendApiClient.get<ZoneDeletionPreview>(
+      `zones/${encodeURIComponent(id)}/deletion-preview`
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible d'analyser les éléments liés à la zone.");
+  }
+}
+
+export type DeleteZoneOptions = {
+  cascade?: boolean;
+};
+
+export async function deleteZone(id: string, options?: DeleteZoneOptions): Promise<void> {
+  try {
+    const cascade = options?.cascade === true;
+    await backendApiClient.delete(`zones/${encodeURIComponent(id)}`, {
+      params: cascade ? { cascade: true } : undefined,
+    });
   } catch (error) {
     throw toApiError(error, "Impossible de supprimer la zone.");
   }

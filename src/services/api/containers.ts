@@ -40,6 +40,36 @@ export async function createContainer(
   }
 }
 
+export type UpdateContainerPayload = {
+  serialNumber: string;
+};
+
+export async function getContainersByZone(zoneId: string): Promise<Container[]> {
+  try {
+    const { data } = await backendApiClient.get<Container[]>("containers", {
+      params: { zoneId },
+    });
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger les conteneurs de la zone.");
+  }
+}
+
+export async function updateContainer(
+  id: string,
+  payload: UpdateContainerPayload
+): Promise<Container> {
+  try {
+    const { data } = await backendApiClient.patch<Container>(
+      `containers/${encodeURIComponent(id)}`,
+      payload
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de mettre à jour le conteneur.");
+  }
+}
+
 export async function deleteContainer(id: string): Promise<void> {
   try {
     await backendApiClient.delete(`containers/${encodeURIComponent(id)}`);
