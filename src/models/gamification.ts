@@ -15,8 +15,7 @@ export type GamificationProfile = {
 
 export type LeaderboardEntry = {
   rank: number;
-  firstName: string;
-  lastName?: string;
+  username: string;
   totalPoints: number;
   co2Saved: number;
 };

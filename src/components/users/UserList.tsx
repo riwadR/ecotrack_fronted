@@ -6,12 +6,14 @@ type UserListProps = {
   users: User[];
 };
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+function getInitials(username: string, firstName: string, lastName: string) {
+  const source = username || `${firstName} ${lastName}`.trim();
+  if (!source) return "?";
+  const parts = source.split(/[\s._-]+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return source.slice(0, 2).toUpperCase();
 }
 
 const COLORS = ["#0ea5e9", "#16a34a", "#8b5cf6", "#f59e0b", "#ef4444"];
@@ -31,11 +33,10 @@ export function UserList({ users }: UserListProps) {
 
   return (
     <div style={{ overflowX: "auto" }}>
-      {/* Header */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 2fr 1fr",
+          gridTemplateColumns: "1.2fr 1fr 1fr 1.5fr 0.8fr",
           padding: "10px 16px",
           borderBottom: "1px solid #e2e8f0",
           color: "#94a3b8",
@@ -45,20 +46,22 @@ export function UserList({ users }: UserListProps) {
           letterSpacing: "0.05em",
         }}
       >
-        <span>Utilisateur</span>
+        <span>Pseudo</span>
+        <span>Prénom</span>
+        <span>Nom</span>
         <span>Email</span>
         <span>Statut</span>
       </div>
 
-      {/* Rows */}
       {users.map((user, i) => {
         const color = COLORS[i % COLORS.length];
+        const displayUsername = user.username || "—";
         return (
           <div
             key={user.id}
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 2fr 1fr",
+              gridTemplateColumns: "1.2fr 1fr 1fr 1.5fr 0.8fr",
               padding: "14px 16px",
               borderBottom: "1px solid #f1f5f9",
               alignItems: "center",
@@ -71,7 +74,6 @@ export function UserList({ users }: UserListProps) {
               (e.currentTarget.style.background = "transparent")
             }
           >
-            {/* Avatar + Nom */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div
                 style={{
@@ -88,17 +90,21 @@ export function UserList({ users }: UserListProps) {
                   flexShrink: 0,
                 }}
               >
-                {getInitials(user.name)}
+                {getInitials(user.username, user.firstName, user.lastName)}
               </div>
               <span style={{ fontWeight: 600, color: "#0f172a", fontSize: "14px" }}>
-                {user.name}
+                {displayUsername}
               </span>
             </div>
 
-            {/* Email */}
+            <span style={{ color: "#0f172a", fontSize: "14px" }}>
+              {user.firstName || "—"}
+            </span>
+            <span style={{ color: "#0f172a", fontSize: "14px" }}>
+              {user.lastName || "—"}
+            </span>
             <span style={{ color: "#64748b", fontSize: "14px" }}>{user.email}</span>
 
-            {/* Badge statut */}
             <span
               style={{
                 display: "inline-flex",
@@ -127,7 +133,6 @@ export function UserList({ users }: UserListProps) {
         );
       })}
 
-      {/* Footer */}
       <div style={{ padding: "12px 16px", color: "#94a3b8", fontSize: "13px" }}>
         {users.length} utilisateur{users.length > 1 ? "s" : ""}
       </div>

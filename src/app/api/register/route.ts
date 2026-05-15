@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
+import {
+  isValidUsername,
+  USERNAME_VALIDATION_MESSAGE,
+} from "@/lib/validation/username";
 
 export async function POST(request: Request) {
-  const { firstName, lastName, email, password, dateOfBirth } =
+  const { username, firstName, lastName, email, password, dateOfBirth } =
     await request.json();
 
-  if (!firstName || !lastName || !email || !password || !dateOfBirth) {
+  if (!username || !firstName || !lastName || !email || !password || !dateOfBirth) {
     return NextResponse.json(
       { message: "Tous les champs sont obligatoires." },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidUsername(String(username))) {
+    return NextResponse.json(
+      { message: USERNAME_VALIDATION_MESSAGE },
       { status: 400 }
     );
   }
@@ -23,6 +34,7 @@ export async function POST(request: Request) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      username: String(username).trim(),
       firstName,
       lastName,
       email,

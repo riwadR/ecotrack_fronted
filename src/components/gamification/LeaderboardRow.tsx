@@ -10,11 +10,8 @@ type LeaderboardRowProps = {
   animationDelayMs?: number;
 };
 
-function formatCitizenName(entry: LeaderboardEntry): string {
-  const firstName = entry.firstName?.trim() ?? "";
-  const lastName = entry.lastName?.trim() ?? "";
-  const fullName = `${firstName} ${lastName}`.trim();
-  return fullName || "Citoyen";
+function formatPublicDisplayName(entry: LeaderboardEntry): string {
+  return entry.username?.trim() || "Citoyen";
 }
 
 const podiumStyles: Record<
@@ -67,7 +64,7 @@ export default function LeaderboardRow({
         </div>
 
         <p className="m-0 truncate font-semibold text-slate-900">
-          {formatCitizenName(entry)}
+          {formatPublicDisplayName(entry)}
         </p>
 
         <div className="text-right">

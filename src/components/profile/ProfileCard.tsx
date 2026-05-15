@@ -1,10 +1,12 @@
 type ProfileCardProps = {
+  username: string;
   firstName: string;
   lastName: string;
   email: string;
 };
 
 export default function ProfileCard({
+  username,
   firstName,
   lastName,
   email,
@@ -23,6 +25,13 @@ export default function ProfileCard({
       <h1 style={{ color: "#0f172a", marginBottom: "24px" }}>Mon profil</h1>
 
       <div style={{ display: "grid", gap: "16px" }}>
+        <div>
+          <p style={{ margin: 0, color: "#64748b" }}>Pseudo</p>
+          <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>
+            {username || "—"}
+          </p>
+        </div>
+
         <div>
           <p style={{ margin: 0, color: "#64748b" }}>Prénom</p>
           <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>

@@ -1,6 +1,7 @@
 import type { Role } from "@/models/user";
 import type { SessionUser } from "@/lib/auth";
 import { getBackendBaseUrl } from "@/lib/backend-url";
+import { resolvePublicUsername } from "@/lib/user/displayUsername";
 
 type BackendAuthResponse = {
   accessToken: string;
@@ -10,10 +11,27 @@ type BackendAuthResponse = {
 
 type UserProfileMe = {
   email: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   role: Role;
 };
+
+function buildSessionUser(profile: UserProfileMe): SessionUser {
+  const email = profile.email;
+  const username = resolvePublicUsername({
+    username: profile.username,
+    email,
+    fallback: "Utilisateur",
+  });
+
+  return {
+    email,
+    name: username,
+    username,
+    role: profile.role,
+  };
+}
 
 /**
  * Rafraîchit les tokens (rotation côté Spring) et charge le profil via JWT (source de vérité pour le rôle).
@@ -47,18 +65,12 @@ export async function backendRefreshAndSessionUser(
   if (!meRes.ok) return null;
 
   const profile = (await meRes.json()) as UserProfileMe;
-  const name =
-    `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() ||
-    profile.email;
+  const sessionUser = buildSessionUser(profile);
 
   return {
     accessToken: auth.accessToken,
     refreshToken: auth.refreshToken,
-    sessionUser: {
-      email: profile.email,
-      name,
-      role: profile.role,
-    },
+    sessionUser,
   };
 }
 
@@ -73,12 +85,5 @@ export async function backendFetchMe(
   });
   if (!meRes.ok) return null;
   const profile = (await meRes.json()) as UserProfileMe;
-  const name =
-    `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() ||
-    profile.email;
-  return {
-    email: profile.email,
-    name,
-    role: profile.role,
-  };
+  return buildSessionUser(profile);
 }

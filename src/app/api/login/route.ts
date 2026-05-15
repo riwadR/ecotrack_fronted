@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getBackendBaseUrl } from "@/lib/backend-url";
 import { setAuthCookiesOnResponse } from "@/lib/auth-cookies";
+import { resolvePublicUsername } from "@/lib/user/displayUsername";
 
 export async function POST(request: Request) {
   const { email, password } = await request.json();
@@ -45,15 +46,21 @@ export async function POST(request: Request) {
 
   const profile = (await profileRes.json()) as {
     email: string;
+    username?: string;
     firstName?: string;
     lastName?: string;
     role: "ADMIN" | "MANAGER" | "AGENT" | "CITIZEN";
   };
 
-  const name = `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim();
+  const username = resolvePublicUsername({
+    username: profile.username,
+    email: profile.email,
+    fallback: "Utilisateur",
+  });
   const sessionUser = {
     email: profile.email,
-    name: name || profile.email,
+    name: username,
+    username,
     role: profile.role,
   };
 

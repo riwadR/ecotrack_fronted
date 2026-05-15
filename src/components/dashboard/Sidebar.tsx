@@ -34,7 +34,7 @@ const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
   CITIZEN:      { label: "Citoyen",      color: "#16a34a" },
 };
 
-export default function Sidebar({ role, name }: { role: Role; name: string }) {
+export default function Sidebar({ role, username }: { role: Role; username: string }) {
   const pathname = usePathname();
   const badge = ROLE_BADGE[role];
   const [isOpen, setIsOpen] = useState(false);
@@ -60,7 +60,7 @@ export default function Sidebar({ role, name }: { role: Role; name: string }) {
 
         {/* User card */}
         <div style={{ background: "#1e293b", borderRadius: "10px", padding: "10px 12px", margin: "0 8px" }}>
-          <p style={{ margin: "0 0 4px", fontWeight: 600, fontSize: "13px", color: "#fff" }}>{name}</p>
+          <p style={{ margin: "0 0 4px", fontWeight: 600, fontSize: "13px", color: "#fff" }}>{username}</p>
           <span style={{ background: badge.color, color: "#fff", fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px" }}>
             {badge.label}
           </span>

@@ -2,6 +2,7 @@
 export function encodeSessionPayload(session: {
   email: string;
   name: string;
+  username?: string;
   role: string;
 }): string {
   const json = JSON.stringify(session);

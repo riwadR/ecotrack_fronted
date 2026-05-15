@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  isValidUsername,
+  USERNAME_VALIDATION_MESSAGE,
+} from "@/lib/validation/username";
 
 export default function RegisterForm() {
   const router = useRouter();
 
+  const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -21,6 +26,13 @@ export default function RegisterForm() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    const trimmedUsername = username.trim();
+    if (!isValidUsername(trimmedUsername)) {
+      setError(USERNAME_VALIDATION_MESSAGE);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -30,6 +42,7 @@ export default function RegisterForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          username: trimmedUsername,
           firstName,
           lastName,
           dateOfBirth,
@@ -62,6 +75,37 @@ export default function RegisterForm() {
       onSubmit={handleSubmit}
       style={{ display: "flex", flexDirection: "column", gap: "16px" }}
     >
+      <div>
+        <label
+          htmlFor="username"
+          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
+        >
+          Pseudo
+        </label>
+        <input
+          id="username"
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="EcoWarrior99"
+          required
+          minLength={5}
+          maxLength={15}
+          pattern="[a-zA-Z0-9_.-]+"
+          autoComplete="username"
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: "10px",
+            border: "1px solid #cbd5e1",
+            outline: "none",
+          }}
+        />
+        <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" }}>
+          5 à 15 caractères : lettres, chiffres, tirets, underscores ou points (sans espace).
+        </p>
+      </div>
+
       <div>
         <label
           htmlFor="firstName"

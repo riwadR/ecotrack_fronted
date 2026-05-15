@@ -1,9 +1,11 @@
 import { User } from "@/models/user";
 import { headers } from "next/headers";
+import { resolvePublicUsername } from "@/lib/user/displayUsername";
 
 type UsersApiRecord = {
   id: string;
   email: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   role: User["role"];
@@ -14,7 +16,13 @@ function mapUsersApiRecords(records: UsersApiRecord[]): User[] {
     id: u.id,
     email: u.email,
     role: u.role,
-    name: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email,
+    username: resolvePublicUsername({
+      username: u.username,
+      email: u.email,
+      fallback: "—",
+    }),
+    firstName: u.firstName?.trim() ?? "",
+    lastName: u.lastName?.trim() ?? "",
   }));
 }
 

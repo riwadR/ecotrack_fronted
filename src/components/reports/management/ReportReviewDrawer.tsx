@@ -4,6 +4,7 @@ import type { ReportListItem, ReportStatus, ReportUpdateStatus } from "@/models/
 import { getReportTypeLabel } from "@/lib/reports/reportTypeLabels";
 import { isReportToProcessStatus } from "@/lib/reports/reportStatusLabels";
 import ReportStatusBadge from "@/components/reports/management/ReportStatusBadge";
+import { resolvePublicUsername } from "@/lib/user/displayUsername";
 
 const PHOTO_PLACEHOLDER =
   "https://dummyimage.com/640x360/e2e8f0/64748b&text=Aucune+photo";
@@ -32,6 +33,16 @@ function formatReportDate(iso?: string): string {
 
 function canReopen(status: ReportStatus): boolean {
   return status !== "PENDING";
+}
+
+function hasReporterIdentity(report: ReportListItem): boolean {
+  return Boolean(
+    report.reporterId ||
+      report.reporterUsername?.trim() ||
+      report.reporterFirstName?.trim() ||
+      report.reporterLastName?.trim() ||
+      report.reporterEmail?.trim()
+  );
 }
 
 export default function ReportReviewDrawer({
@@ -97,13 +108,47 @@ export default function ReportReviewDrawer({
               <dd className="m-0 text-slate-900">{report.containerZoneName}</dd>
             </div>
           ) : null}
-          {report.reporterFirstName ? (
-            <div>
-              <dt className="font-medium text-slate-500">Signalé par</dt>
-              <dd className="m-0 text-slate-900">{report.reporterFirstName}</dd>
-            </div>
-          ) : null}
         </dl>
+
+        {hasReporterIdentity(report) ? (
+          <section aria-labelledby="reporter-identity-title">
+            <h3
+              id="reporter-identity-title"
+              className="m-0 text-sm font-semibold text-slate-800"
+            >
+              Détails du citoyen
+            </h3>
+            <dl className="m-0 mt-3 grid gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm">
+              <div>
+                <dt className="font-medium text-slate-500">Pseudo</dt>
+                <dd className="m-0 font-semibold text-slate-900">
+                  {resolvePublicUsername({
+                    username: report.reporterUsername,
+                    email: report.reporterEmail,
+                  })}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-slate-500">Prénom</dt>
+                <dd className="m-0 text-slate-900">
+                  {report.reporterFirstName?.trim() || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-slate-500">Nom</dt>
+                <dd className="m-0 text-slate-900">
+                  {report.reporterLastName?.trim() || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-slate-500">Adresse mail</dt>
+                <dd className="m-0 break-all text-slate-900">
+                  {report.reporterEmail?.trim() || "—"}
+                </dd>
+              </div>
+            </dl>
+          </section>
+        ) : null}
 
         <section>
           <h3 className="m-0 text-sm font-semibold text-slate-800">Commentaire</h3>
@@ -198,3 +243,4 @@ export default function ReportReviewDrawer({
     </aside>
   );
 }
+

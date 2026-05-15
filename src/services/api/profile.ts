@@ -5,6 +5,7 @@ import { toApiError } from "@/lib/api/apiErrors";
 export type UserProfileResponse = {
   id: string;
   email: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   dateOfBirth?: string | number[] | null;

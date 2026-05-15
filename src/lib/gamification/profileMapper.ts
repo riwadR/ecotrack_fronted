@@ -1,4 +1,5 @@
 import type { Badge, GamificationProfile, LeaderboardEntry } from "@/models/gamification";
+import { resolvePublicUsername } from "@/lib/user/displayUsername";
 
 function toNumber(value: unknown): number {
   const parsed = Number(value);
@@ -71,13 +72,14 @@ export function normalizeLeaderboardEntries(value: unknown): LeaderboardEntry[] 
     }
 
     const raw = entry as Record<string, unknown>;
-    const firstName = String(raw.firstName ?? "").trim();
-    const lastName = String(raw.lastName ?? "").trim();
+    const username = resolvePublicUsername({
+      username: String(raw.username ?? ""),
+      email: raw.email != null ? String(raw.email) : undefined,
+    });
 
     entries.push({
       rank: toNumber(raw.rank) || index + 1,
-      firstName,
-      lastName,
+      username,
       totalPoints: toNumber(raw.totalPoints),
       co2Saved: toNumber(raw.co2Saved),
     });

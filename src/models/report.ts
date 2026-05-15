@@ -57,7 +57,11 @@ export type ReportListItem = {
   comment?: string | null;
   createdAt?: string;
   reporterId?: string;
+  reporterUsername?: string;
+  /** Admin/agent verification fields */
   reporterFirstName?: string;
+  reporterLastName?: string;
+  reporterEmail?: string;
   containerId?: string;
   containerSerialNumber?: string;
   containerZoneName?: string;

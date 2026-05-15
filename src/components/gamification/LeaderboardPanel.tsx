@@ -34,7 +34,7 @@ export default function LeaderboardPanel({ entries }: LeaderboardPanelProps) {
         <ol className="m-0 grid list-none gap-3 p-0">
           {entries.map((entry, index) => (
             <LeaderboardRow
-              key={`${entry.rank}-${entry.firstName}-${entry.lastName ?? ""}`}
+              key={`${entry.rank}-${entry.username}`}
               entry={entry}
               animationDelayMs={index * 50}
             />

@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc" }}>
       <AuthClientShell />
-      <Sidebar role={session.role} name={session.name} />
+      <Sidebar role={session.role} username={session.username} />
       <main
         style={{
           flex: 1,

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { SessionUser } from "@/lib/auth";
 
 import { Role } from "@/models/user";
+import { resolvePublicUsername } from "@/lib/user/displayUsername";
 import {
   changeUserPassword,
   getUserByEmail,
@@ -80,6 +81,7 @@ export default function ProfileClientPage({
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
+    username: "",
     firstName: "",
     lastName: "",
     dateOfBirth: "",
@@ -102,6 +104,11 @@ export default function ProfileClientPage({
         setEmailVerified(Boolean(user.emailVerified));
         setMfaEnabled(Boolean(user.mfaEnabled));
         setForm({
+          username: resolvePublicUsername({
+            username: user.username,
+            email: user.email,
+            fallback: "",
+          }),
           firstName: user.firstName || "",
           lastName: user.lastName || "",
           dateOfBirth: normalizeDateOfBirthInput(user.dateOfBirth),
@@ -176,6 +183,7 @@ export default function ProfileClientPage({
       setEmailVerified(Boolean(updated.emailVerified));
       setMfaEnabled(Boolean(updated.mfaEnabled));
       setForm({
+        username: updated.username || form.username,
         firstName: updated.firstName || "",
         lastName: updated.lastName || "",
         dateOfBirth: normalizeDateOfBirthInput(updated.dateOfBirth),
@@ -268,22 +276,23 @@ export default function ProfileClientPage({
               marginBottom: "16px",
             }}
           >
-            {(
-              form.firstName ||
-              form.lastName ||
-              session.name ||
-              session.email ||
-              "U"
-            )
+            {resolvePublicUsername({
+              username: form.username || session.username,
+              email: form.email || session.email,
+              fallback: "U",
+            })
               .charAt(0)
               .toUpperCase()}
           </div>
 
           <h2 style={{ margin: "0 0 6px", color: "#0f172a" }}>
-            {`${form.firstName} ${form.lastName}`.trim() || session.name}
+            {resolvePublicUsername({
+              username: form.username || session.username,
+              email: form.email || session.email,
+            })}
           </h2>
-          <p style={{ margin: "0 0 14px", color: "#64748b" }}>
-            {form.email || session.email}
+          <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "14px" }}>
+            {`${form.firstName} ${form.lastName}`.trim() || "—"}
           </p>
 
           <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "14px" }}>
@@ -326,10 +335,26 @@ export default function ProfileClientPage({
               }}
             >
               <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
-                Identité (backend)
+                Nom légal
               </p>
               <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>
                 {`${form.firstName} ${form.lastName}`.trim() || "—"}
+              </p>
+            </div>
+
+            <div
+              style={{
+                background: "#f8fafc",
+                borderRadius: "12px",
+                padding: "14px",
+              }}
+            >
+              <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
+                Compte
+              </p>
+              <p style={{ margin: "0 0 6px", color: "#0f172a", fontWeight: 600 }}>
+                Adresse mail :{" "}
+                <span style={{ fontWeight: 500 }}>{form.email || session.email}</span>
               </p>
             </div>
 
@@ -380,6 +405,27 @@ export default function ProfileClientPage({
           ) : (
             <div style={{ display: "grid", gap: "22px" }}>
               <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+                <div>
+                  <label style={labelStyle}>Pseudo</label>
+                  <input
+                    type="text"
+                    value={form.username}
+                    readOnly
+                    disabled
+                    style={{
+                      ...inputStyle,
+                      background: "#f8fafc",
+                      color: "#64748b",
+                      cursor: "not-allowed",
+                    }}
+                    aria-readonly="true"
+                  />
+                  <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" }}>
+                    Le pseudo ne peut pas être modifié après la création du compte. Veuillez
+                    contacter le support en cas de besoin.
+                  </p>
+                </div>
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }} className="name-grid">
                   <div>
                     <label style={labelStyle}>Prénom</label>
