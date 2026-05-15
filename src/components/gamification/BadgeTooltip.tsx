@@ -52,7 +52,7 @@ export function BadgeTooltipStyles() {
         max-width: min(240px, 90vw);
         padding: 8px 10px;
         border-radius: ${gamificationTheme.radiusSm};
-        background: ${gamificationTheme.title};
+        background: #0f172a;
         color: #fff;
         font-size: 12px;
         line-height: 1.4;

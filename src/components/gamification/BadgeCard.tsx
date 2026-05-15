@@ -1,8 +1,7 @@
 import Image from "next/image";
 import type { Badge } from "@/models/gamification";
-import { gamificationTheme } from "@/components/gamification/gamificationTheme";
-import { resolveBadgeIconSrc } from "@/lib/gamification/formatters";
 import BadgeTooltip from "@/components/gamification/BadgeTooltip";
+import { resolveBadgeIconSrc } from "@/lib/gamification/formatters";
 
 type BadgeCardProps = {
   badge: Badge;
@@ -17,69 +16,54 @@ export default function BadgeCard({
   isNextTarget = false,
   animationDelayMs = 0,
 }: BadgeCardProps) {
+  const statusLabel = isEarned
+    ? "Obtenu"
+    : isNextTarget
+      ? "Prochain objectif"
+      : "À débloquer";
+
+  const borderClass = isEarned
+    ? "border-green-200 ring-1 ring-green-100"
+    : isNextTarget
+      ? "border-green-400 ring-2 ring-green-100"
+      : "border-slate-200";
+
   return (
     <BadgeTooltip
       description={badge.description}
-      className="gamification-fade-in"
-      style={{
-        background: gamificationTheme.cardBackground,
-        borderRadius: gamificationTheme.radiusMd,
-        padding: "18px 16px",
-        boxShadow: gamificationTheme.shadow,
-        border: `1px solid ${
-          isEarned
-            ? gamificationTheme.accentSoft
-            : isNextTarget
-              ? gamificationTheme.accent
-              : "#e2e8f0"
-        }`,
-        textAlign: "center",
-        opacity: isEarned ? 1 : 0.55,
-        filter: isEarned ? "none" : "grayscale(1)",
-        transform: isEarned ? "translateY(0)" : "translateY(2px)",
-        transition: "opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease",
-        animationDelay: `${animationDelayMs}ms`,
-      }}
+      className={[
+        "gamification-fade-in group flex h-full w-[150px] flex-col items-center rounded-2xl border bg-white p-5 text-center shadow-sm",
+        "transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
+        borderClass,
+        isEarned ? "opacity-100" : "opacity-60 grayscale hover:grayscale-[0.35]",
+      ].join(" ")}
+      style={{ animationDelay: `${animationDelayMs}ms` }}
     >
-      <article style={{ margin: 0 }}>
-      <div
-        style={{
-          width: "64px",
-          height: "64px",
-          margin: "0 auto 12px",
-          position: "relative",
-        }}
-      >
-        <Image
-          src={resolveBadgeIconSrc(badge.iconUrl)}
-          alt={badge.name}
-          width={64}
-          height={64}
-          style={{ objectFit: "contain" }}
-        />
-      </div>
-      <h4
-        style={{
-          margin: "0 0 6px",
-          color: gamificationTheme.text,
-          fontSize: "14px",
-        }}
-      >
-        {badge.name}
-      </h4>
-      <p style={{ margin: 0, color: gamificationTheme.muted, fontSize: "12px" }}>
-        {badge.requiredPoints} points
-      </p>
-      <p
-        style={{
-          margin: "8px 0 0",
-          color: isEarned ? gamificationTheme.accentDeep : gamificationTheme.muted,
-          fontSize: "12px",
-          fontWeight: 600,
-        }}
-      >
-        {isEarned ? "Obtenu" : isNextTarget ? "Prochain objectif" : "À débloquer"}
-      </p>
+      <article className="m-0 flex h-full w-full flex-col items-center">
+        <div className="relative mb-4 flex h-16 w-16 items-center justify-center transition-transform duration-300 group-hover:scale-110">
+          <Image
+            src={resolveBadgeIconSrc(badge.iconUrl)}
+            alt={badge.name}
+            width={64}
+            height={64}
+            className="object-contain"
+          />
+        </div>
+
+        <h4 className="m-0 text-sm font-semibold text-slate-800">{badge.name}</h4>
+
+        <p className="mt-1.5 mb-0 text-xs text-slate-400">
+          {badge.requiredPoints} points
+        </p>
+
+        <span
+          className={[
+            "mt-auto pt-3 text-xs font-bold",
+            isEarned ? "text-green-700" : isNextTarget ? "text-green-600" : "text-slate-400",
+          ].join(" ")}
+        >
+          {statusLabel}
+        </span>
       </article>
     </BadgeTooltip>
   );

@@ -1,34 +1,30 @@
 "use client";
 
 import LeaderboardPanel from "@/components/gamification/LeaderboardPanel";
+import GamificationMotionStyles from "@/components/gamification/GamificationMotionStyles";
 import { LeaderboardSkeleton } from "@/components/gamification/GamificationSkeletons";
-import { gamificationTheme } from "@/components/gamification/gamificationTheme";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 
 export default function LeaderboardDashboard() {
   const { entries, loading, error } = useLeaderboard();
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div className="grid gap-8">
+      <GamificationMotionStyles />
+
       <header>
-        <h1 style={{ margin: "0 0 4px", color: gamificationTheme.text }}>
+        <h1 className="m-0 mb-1 text-3xl font-extrabold tracking-tight text-slate-900">
           Classement
         </h1>
-        <p style={{ margin: 0, color: gamificationTheme.muted }}>
-          Les citoyens les plus engagés classés par points et impact CO2.
+        <p className="m-0 text-slate-500">
+          Les citoyens les plus engagés classés par points et impact CO₂.
         </p>
       </header>
 
       {error ? (
         <div
           role="alert"
-          style={{
-            background: "#fee2e2",
-            color: "#b91c1c",
-            borderRadius: gamificationTheme.radiusSm,
-            padding: "12px 14px",
-            fontWeight: 600,
-          }}
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800"
         >
           {error}
         </div>

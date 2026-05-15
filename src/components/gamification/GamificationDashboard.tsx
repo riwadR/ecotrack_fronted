@@ -4,15 +4,14 @@ import EcologicalImpactStats from "@/components/gamification/EcologicalImpactSta
 import BadgeProgressBar from "@/components/gamification/BadgeProgressBar";
 import BadgeGrid from "@/components/gamification/BadgeGrid";
 import MyBadgesPanel from "@/components/gamification/MyBadgesPanel";
+import GamificationMotionStyles from "@/components/gamification/GamificationMotionStyles";
 import {
   BadgeGridSkeleton,
   BadgeProgressSkeleton,
   EcologicalImpactStatsSkeleton,
   MyBadgesSkeleton,
 } from "@/components/gamification/GamificationSkeletons";
-import { gamificationTheme } from "@/components/gamification/gamificationTheme";
 import { useGamificationData } from "@/hooks/useGamificationData";
-import { BadgeTooltipStyles } from "@/components/gamification/BadgeTooltip";
 
 export default function GamificationDashboard() {
   const {
@@ -26,15 +25,14 @@ export default function GamificationDashboard() {
   const earnedBadges = profile?.earnedBadges ?? [];
 
   return (
-    <div style={{ display: "grid", gap: "28px" }}>
+    <div className="grid gap-8">
       <GamificationMotionStyles />
-      <BadgeTooltipStyles />
 
       <header>
-        <h1 style={{ margin: "0 0 4px", color: gamificationTheme.text }}>
+        <h1 className="m-0 mb-1 text-3xl font-extrabold tracking-tight text-slate-900">
           Gamification
         </h1>
-        <p style={{ margin: 0, color: gamificationTheme.muted }}>
+        <p className="m-0 text-slate-500">
           Suis ton impact écologique et tes badges.
         </p>
       </header>
@@ -79,46 +77,9 @@ function ErrorBanner({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      style={{
-        background: "#fee2e2",
-        color: "#b91c1c",
-        borderRadius: gamificationTheme.radiusSm,
-        padding: "12px 14px",
-        fontWeight: 600,
-      }}
+      className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800"
     >
       {message}
     </div>
-  );
-}
-
-function GamificationMotionStyles() {
-  return (
-    <style>{`
-      @keyframes gamification-shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-      }
-
-      @keyframes gamification-fade-in-keyframes {
-        from {
-          opacity: 0;
-          transform: translateY(8px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .gamification-fade-in {
-        opacity: 0;
-        animation: gamification-fade-in-keyframes 0.45s ease forwards;
-      }
-
-      .gamification-progress-fill {
-        transform-origin: left center;
-      }
-    `}</style>
   );
 }

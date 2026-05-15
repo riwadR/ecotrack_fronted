@@ -5,3 +5,34 @@
   background: transparent !important;
   border: none !important;
 }
+
+@keyframes gamification-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes gamification-fade-in-keyframes {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gamification-fade-in {
+  opacity: 0;
+  animation: gamification-fade-in-keyframes 0.5s ease forwards;
+}
+
+.gamification-skeleton {
+  background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 50%, #e2e8f0 100%);
+  background-size: 200% 100%;
+  animation: gamification-shimmer 1.2s ease-in-out infinite;
+}

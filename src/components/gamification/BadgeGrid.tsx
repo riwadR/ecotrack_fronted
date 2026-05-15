@@ -1,6 +1,5 @@
 import type { Badge } from "@/models/gamification";
 import BadgeCard from "@/components/gamification/BadgeCard";
-import { gamificationTheme } from "@/components/gamification/gamificationTheme";
 import {
   buildBadgeCollectionState,
   isSameBadge,
@@ -24,18 +23,12 @@ export default function BadgeGrid({
   );
 
   return (
-    <section aria-label="Badges disponibles" style={{ display: "grid", gap: "16px" }}>
+    <section aria-label="Badges disponibles" className="grid gap-5">
       <div>
-        <h2
-          style={{
-            margin: 0,
-            color: gamificationTheme.title,
-            fontSize: "20px",
-          }}
-        >
+        <h2 className="m-0 text-xl font-bold tracking-tight text-slate-900">
           Badges disponibles
         </h2>
-        <p style={{ margin: "6px 0 0", color: gamificationTheme.muted }}>
+        <p className="mt-1.5 mb-0 text-sm text-slate-500">
           {locked.length === 0
             ? "Tu as déjà débloqué tous les badges du catalogue."
             : "Ces badges restent à débloquer en accumulant des points."}
@@ -43,17 +36,11 @@ export default function BadgeGrid({
       </div>
 
       {catalog.length === 0 ? (
-        <p style={{ margin: 0, color: gamificationTheme.muted }}>
+        <p className="m-0 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
           Le catalogue de badges est indisponible pour le moment.
         </p>
       ) : locked.length === 0 ? null : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-            gap: "16px",
-          }}
-        >
+        <div className="flex w-full flex-wrap justify-start gap-4 sm:gap-5">
           {locked.map((badge, index) => (
             <BadgeCard
               key={badge.id}

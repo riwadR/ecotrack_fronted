@@ -1,51 +1,15 @@
-import { gamificationTheme } from "@/components/gamification/gamificationTheme";
-
-type SkeletonBlockProps = {
-  width?: string;
-  height?: string;
-  borderRadius?: string;
-};
-
 function SkeletonBlock({
-  width = "100%",
-  height = "16px",
-  borderRadius = gamificationTheme.radiusSm,
-}: SkeletonBlockProps) {
-  return (
-    <div
-      className="gamification-skeleton"
-      style={{
-        width,
-        height,
-        borderRadius,
-        background:
-          "linear-gradient(90deg, #e2e8f0 0%, #f8fafc 50%, #e2e8f0 100%)",
-        backgroundSize: "200% 100%",
-        animation: "gamification-shimmer 1.2s ease-in-out infinite",
-      }}
-    />
-  );
+  className = "",
+}: {
+  className?: string;
+}) {
+  return <div className={`gamification-skeleton ${className}`} />;
 }
 
-function SkeletonCard({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}) {
+function SkeletonCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      style={{
-        background: gamificationTheme.cardBackground,
-        borderRadius: gamificationTheme.radiusMd,
-        padding: "20px",
-        boxShadow: gamificationTheme.shadow,
-        border: `1px solid ${gamificationTheme.border}`,
-        display: "grid",
-        gap: "12px",
-        ...style,
-      }}
+      className={`grid gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${className}`}
     >
       {children}
     </div>
@@ -54,18 +18,12 @@ function SkeletonCard({
 
 export function EcologicalImpactStatsSkeleton() {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "16px",
-      }}
-    >
+    <div className="grid gap-5 sm:grid-cols-2">
       {Array.from({ length: 2 }).map((_, index) => (
-        <SkeletonCard key={index}>
-          <SkeletonBlock width="48px" height="48px" borderRadius="12px" />
-          <SkeletonBlock width="60%" height="28px" />
-          <SkeletonBlock width="80%" height="14px" />
+        <SkeletonCard key={index} className="p-8">
+          <SkeletonBlock className="h-12 w-12 rounded-xl" />
+          <SkeletonBlock className="h-12 w-2/3 rounded-lg" />
+          <SkeletonBlock className="h-4 w-1/2 rounded-md" />
         </SkeletonCard>
       ))}
     </div>
@@ -74,28 +32,22 @@ export function EcologicalImpactStatsSkeleton() {
 
 export function BadgeProgressSkeleton() {
   return (
-    <SkeletonCard>
-      <SkeletonBlock width="40%" height="18px" />
-      <SkeletonBlock width="70%" height="14px" />
-      <SkeletonBlock width="100%" height="12px" borderRadius="999px" />
+    <SkeletonCard className="p-8">
+      <SkeletonBlock className="h-5 w-40 rounded-md" />
+      <SkeletonBlock className="h-4 w-3/4 rounded-md" />
+      <SkeletonBlock className="h-3 w-full rounded-full" />
     </SkeletonCard>
   );
 }
 
 export function BadgeGridSkeleton() {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-        gap: "16px",
-      }}
-    >
+    <div className="flex w-full flex-wrap justify-start gap-4">
       {Array.from({ length: 8 }).map((_, index) => (
-        <SkeletonCard key={index} style={{ justifyItems: "center" }}>
-          <SkeletonBlock width="64px" height="64px" borderRadius="16px" />
-          <SkeletonBlock width="80%" height="14px" />
-          <SkeletonBlock width="100%" height="12px" />
+        <SkeletonCard key={index} className="w-[150px] p-5">
+          <SkeletonBlock className="h-16 w-16 rounded-2xl" />
+          <SkeletonBlock className="h-4 w-4/5 rounded-md" />
+          <SkeletonBlock className="h-3 w-2/3 rounded-md" />
         </SkeletonCard>
       ))}
     </div>
@@ -104,17 +56,11 @@ export function BadgeGridSkeleton() {
 
 export function MyBadgesSkeleton() {
   return (
-    <SkeletonCard>
-      <SkeletonBlock width="35%" height="18px" />
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-          gap: "16px",
-        }}
-      >
+    <SkeletonCard className="p-8">
+      <SkeletonBlock className="h-5 w-36 rounded-md" />
+      <div className="flex flex-wrap justify-start gap-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <SkeletonBlock key={index} width="64px" height="64px" borderRadius="16px" />
+          <SkeletonBlock key={index} className="h-24 w-[120px] rounded-xl" />
         ))}
       </div>
     </SkeletonCard>
@@ -123,23 +69,16 @@ export function MyBadgesSkeleton() {
 
 export function LeaderboardSkeleton() {
   return (
-    <SkeletonCard>
-      <SkeletonBlock width="45%" height="18px" />
+    <div className="grid gap-3">
       {Array.from({ length: 6 }).map((_, index) => (
-        <div
-          key={index}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "40px 1fr 80px",
-            gap: "12px",
-            alignItems: "center",
-          }}
-        >
-          <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
-          <SkeletonBlock width="70%" height="14px" />
-          <SkeletonBlock width="100%" height="14px" />
-        </div>
+        <SkeletonCard key={index} className="p-4">
+          <div className="grid grid-cols-[40px_1fr_80px] items-center gap-4">
+            <SkeletonBlock className="h-9 w-9 rounded-full" />
+            <SkeletonBlock className="h-4 w-3/5 rounded-md" />
+            <SkeletonBlock className="h-8 w-full rounded-md" />
+          </div>
+        </SkeletonCard>
       ))}
-    </SkeletonCard>
+    </div>
   );
 }

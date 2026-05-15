@@ -3,11 +3,11 @@
 import Link from "next/link";
 import EcologicalImpactStats from "@/components/gamification/EcologicalImpactStats";
 import BadgeProgressBar from "@/components/gamification/BadgeProgressBar";
+import GamificationMotionStyles from "@/components/gamification/GamificationMotionStyles";
 import {
   BadgeProgressSkeleton,
   EcologicalImpactStatsSkeleton,
 } from "@/components/gamification/GamificationSkeletons";
-import { gamificationTheme } from "@/components/gamification/gamificationTheme";
 import { useGamificationData } from "@/hooks/useGamificationData";
 
 export default function CitizenGamificationOverview() {
@@ -15,61 +15,28 @@ export default function CitizenGamificationOverview() {
   const totalPoints = profile?.totalPoints ?? 0;
 
   return (
-    <section
-      style={{
-        background: gamificationTheme.cardBackground,
-        borderRadius: gamificationTheme.radiusLg,
-        padding: "24px",
-        boxShadow: gamificationTheme.shadow,
-        border: `1px solid ${gamificationTheme.border}`,
-        display: "grid",
-        gap: "20px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          flexWrap: "wrap",
-        }}
-      >
+    <section className="grid gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <GamificationMotionStyles />
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 style={{ margin: 0, color: gamificationTheme.title }}>
+          <h2 className="m-0 text-xl font-bold tracking-tight text-slate-900">
             Ton parcours écologique
           </h2>
-          <p style={{ margin: "6px 0 0", color: gamificationTheme.muted }}>
+          <p className="mt-1.5 mb-0 text-sm text-slate-500">
             Consulte tes points et ton prochain badge.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/dashboard/gamification"
-            style={{
-              textDecoration: "none",
-              background: gamificationTheme.accent,
-              color: "#fff",
-              borderRadius: gamificationTheme.radiusSm,
-              padding: "10px 14px",
-              fontWeight: 700,
-              fontSize: "14px",
-            }}
+            className="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-green-700 hover:shadow-md"
           >
             Voir la gamification
           </Link>
           <Link
             href="/dashboard/classement"
-            style={{
-              textDecoration: "none",
-              background: "#fff",
-              color: gamificationTheme.accentDeep,
-              border: `1px solid ${gamificationTheme.border}`,
-              borderRadius: gamificationTheme.radiusSm,
-              padding: "10px 14px",
-              fontWeight: 700,
-              fontSize: "14px",
-            }}
+            className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-green-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50"
           >
             Voir le classement
           </Link>
@@ -77,7 +44,7 @@ export default function CitizenGamificationOverview() {
       </div>
 
       {error ? (
-        <p style={{ margin: 0, color: "#b91c1c", fontWeight: 600 }}>{error}</p>
+        <p className="m-0 text-sm font-semibold text-red-700">{error}</p>
       ) : loading ? (
         <>
           <EcologicalImpactStatsSkeleton />
@@ -88,6 +55,7 @@ export default function CitizenGamificationOverview() {
           <EcologicalImpactStats
             totalPoints={totalPoints}
             co2Saved={profile?.co2Saved}
+            showHeading={false}
           />
           <BadgeProgressBar totalPoints={totalPoints} catalog={catalog} />
         </>

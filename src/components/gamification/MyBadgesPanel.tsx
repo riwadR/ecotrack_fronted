@@ -1,9 +1,9 @@
 import Image from "next/image";
 import type { Badge } from "@/models/gamification";
-import { gamificationTheme } from "@/components/gamification/gamificationTheme";
+import GamificationCard from "@/components/gamification/GamificationCard";
+import BadgeTooltip from "@/components/gamification/BadgeTooltip";
 import { enrichEarnedBadges } from "@/lib/gamification/badgeStatus";
 import { resolveBadgeIconSrc } from "@/lib/gamification/formatters";
-import BadgeTooltip from "@/components/gamification/BadgeTooltip";
 
 type MyBadgesPanelProps = {
   earnedBadges: Badge[];
@@ -18,91 +18,45 @@ export default function MyBadgesPanel({
 
   return (
     <section aria-label="Mes badges">
-      <div
-        style={{
-          background: gamificationTheme.cardBackground,
-          borderRadius: gamificationTheme.radiusMd,
-          padding: "20px",
-          boxShadow: gamificationTheme.shadow,
-          border: `1px solid ${gamificationTheme.border}`,
-        }}
-        className="gamification-fade-in"
-      >
-        <h3
-          style={{
-            margin: "0 0 6px",
-            color: gamificationTheme.title,
-            fontSize: "18px",
-          }}
-        >
-          Mes badges
-        </h3>
-        <p style={{ margin: "0 0 16px", color: gamificationTheme.muted }}>
+      <GamificationCard className="p-8">
+        <h3 className="m-0 text-lg font-bold text-slate-900">Mes badges</h3>
+        <p className="mt-1.5 mb-6 text-sm text-slate-500">
           Badges déjà débloqués sur ton profil EcoTrack.
         </p>
 
         {ownedBadges.length === 0 ? (
-          <p style={{ margin: 0, color: gamificationTheme.muted }}>
-            Aucun badge obtenu pour le moment.
+          <p className="m-0 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+            Aucun badge obtenu pour le moment. Accumule des points pour débloquer ton
+            premier badge !
           </p>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-              gap: "16px",
-              overflow: "visible",
-            }}
-          >
+          <div className="flex w-full flex-wrap justify-start gap-4">
             {ownedBadges.map((badge, index) => (
               <BadgeTooltip
                 key={badge.id}
                 description={badge.description}
-                className="gamification-fade-in"
-                style={{
-                  textAlign: "center",
-                  padding: "12px 8px",
-                  borderRadius: gamificationTheme.radiusSm,
-                  background: gamificationTheme.softBackground,
-                  border: `1px solid ${gamificationTheme.accentSoft}`,
-                  animationDelay: `${index * 40}ms`,
-                }}
+                className="gamification-fade-in group w-[120px] rounded-xl border border-green-100 bg-green-50/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:border-green-200 hover:bg-green-50 hover:shadow-md"
+                style={{ animationDelay: `${index * 40}ms` }}
               >
-              <article
-                style={{ margin: 0 }}
-              >
-                <div
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    margin: "0 auto 10px",
-                    position: "relative",
-                  }}
-                >
-                  <Image
-                    src={resolveBadgeIconSrc(badge.iconUrl)}
-                    alt={badge.name}
-                    width={64}
-                    height={64}
-                    style={{ objectFit: "contain" }}
-                  />
-                </div>
-                <p
-                  style={{
-                    margin: 0,
-                    color: gamificationTheme.text,
-                    fontSize: "13px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {badge.name}
-                </p>
-              </article>
+                <article className="m-0 flex flex-col items-center">
+                  <div className="relative mx-auto mb-3 flex h-14 w-14 items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                    <Image
+                      src={resolveBadgeIconSrc(badge.iconUrl)}
+                      alt={badge.name}
+                      width={56}
+                      height={56}
+                      className="object-contain"
+                    />
+                  </div>
+                  <p className="m-0 text-xs font-semibold leading-snug text-slate-800">
+                    {badge.name}
+                  </p>
+                </article>
               </BadgeTooltip>
             ))}
           </div>
         )}
-      </div>
+      </GamificationCard>
     </section>
   );
 }

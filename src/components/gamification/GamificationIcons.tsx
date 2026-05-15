@@ -108,3 +108,63 @@ export function LeafIcon({ size = 24, color = "#16a34a" }: IconProps) {
     </svg>
   );
 }
+
+export function SparkleIcon({ size = 24, color = "#16a34a" }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 3L13.2 8.4L18 9.6L13.2 10.8L12 16.2L10.8 10.8L6 9.6L10.8 8.4L12 3Z"
+        fill={color}
+        opacity="0.9"
+      />
+      <path
+        d="M19 14L19.8 17.2L23 18L19.8 18.8L19 22L18.2 18.8L15 18L18.2 17.2L19 14Z"
+        fill={color}
+        opacity="0.55"
+      />
+      <path
+        d="M5 15L5.6 17.4L8 18L5.6 18.6L5 21L4.4 18.6L2 18L4.4 17.4L5 15Z"
+        fill={color}
+        opacity="0.55"
+      />
+    </svg>
+  );
+}
+
+type MedalVariant = "gold" | "silver" | "bronze";
+
+const medalColors: Record<MedalVariant, { fill: string; ribbon: string }> = {
+  gold: { fill: "#fbbf24", ribbon: "#f59e0b" },
+  silver: { fill: "#cbd5e1", ribbon: "#94a3b8" },
+  bronze: { fill: "#fdba74", ribbon: "#d97706" },
+};
+
+export function MedalIcon({
+  size = 24,
+  variant = "gold",
+}: IconProps & { variant?: MedalVariant }) {
+  const colors = medalColors[variant];
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M8.5 4L10.5 9H6.5L8.5 4ZM15.5 4L17.5 9H13.5L15.5 4Z"
+        fill={colors.ribbon}
+      />
+      <circle cx="12" cy="14" r="5.5" fill={colors.fill} stroke={colors.ribbon} strokeWidth="1.2" />
+      <circle cx="12" cy="14" r="3.2" fill="rgba(255,255,255,0.35)" />
+    </svg>
+  );
+}
