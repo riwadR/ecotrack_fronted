@@ -271,12 +271,23 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
 
   const handleContainerDragEnd = useCallback(
     async (container: AdminMapContainer, latitude: number, longitude: number) => {
+      const newZoneId = findZoneIdContainingPoint(latitude, longitude, mapPolygons);
+      if (!newZoneId) {
+        setToastMessage(
+          "Déplacement refusé : le point doit se trouver dans un secteur délimité."
+        );
+        return;
+      }
+
       const previousLatitude = container.latitude;
       const previousLongitude = container.longitude;
+      const previousZoneId = container.zoneId;
 
       setAdminContainers((current) =>
         current.map((item) =>
-          item.id === container.id ? { ...item, latitude, longitude } : item
+          item.id === container.id
+            ? { ...item, latitude, longitude, zoneId: newZoneId }
+            : item
         )
       );
 
@@ -286,7 +297,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
           type: container.type,
           latitude,
           longitude,
-          zoneId: container.zoneId,
+          zoneId: newZoneId,
           status: container.status,
           fillLevel: Math.min(100, Math.max(0, Math.round(container.fillLevelPercent))),
         });
@@ -295,7 +306,12 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         setAdminContainers((current) =>
           current.map((item) =>
             item.id === container.id
-              ? { ...item, latitude: previousLatitude, longitude: previousLongitude }
+              ? {
+                  ...item,
+                  latitude: previousLatitude,
+                  longitude: previousLongitude,
+                  zoneId: previousZoneId,
+                }
               : item
           )
         );
@@ -304,7 +320,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         );
       }
     },
-    []
+    [mapPolygons]
   );
 
   const handleRequestRelocation = useCallback((container: AdminMapContainer) => {

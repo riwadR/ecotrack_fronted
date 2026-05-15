@@ -4,10 +4,18 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  isValidUsername,
+  getUsernameFieldError,
   USERNAME_VALIDATION_MESSAGE,
 } from "@/lib/validation/username";
+import {
+  isValidPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+} from "@/lib/validation/password";
 import { APP_FORM_CONTROL_CLASS, APP_FORM_LABEL_CLASS } from "@/lib/ui/appChrome";
+
+/** HTML `pattern` for client hints; validation logic uses the same rules as the backend. */
+const USERNAME_HTML_PATTERN = "[a-zA-Z0-9_.-]{5,15}";
+const PASSWORD_HTML_PATTERN = "(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -29,8 +37,14 @@ export default function RegisterForm() {
     setSuccess("");
 
     const trimmedUsername = username.trim();
-    if (!isValidUsername(trimmedUsername)) {
-      setError(USERNAME_VALIDATION_MESSAGE);
+    const usernameError = getUsernameFieldError(trimmedUsername);
+    if (usernameError) {
+      setError(usernameError);
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      setError(PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
 
@@ -79,10 +93,11 @@ export default function RegisterForm() {
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <div>
         <label className={APP_FORM_LABEL_CLASS} htmlFor="username">
-          Pseudo
+          Nom d&apos;utilisateur{" "}
         </label>
         <input
           id="username"
+          name="username"
           type="text"
           className={controlClass}
           value={username}
@@ -91,12 +106,12 @@ export default function RegisterForm() {
           required
           minLength={5}
           maxLength={15}
-          pattern="[a-zA-Z0-9_.-]+"
+          pattern={USERNAME_HTML_PATTERN}
           autoComplete="username"
+          aria-describedby="username-hint"
         />
-        <p className="m-0 mt-1.5 text-xs text-slate-400">
-          5 à 15 caractères : lettres, chiffres, tirets, underscores ou points
-          (sans espace).
+        <p id="username-hint" className="m-0 mt-1.5 text-xs text-slate-500">
+          {USERNAME_VALIDATION_MESSAGE}
         </p>
       </div>
 
@@ -165,13 +180,21 @@ export default function RegisterForm() {
         </label>
         <input
           id="password"
+          name="password"
           type="password"
           className={controlClass}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Min. 8 caractères + maj/min/chiffre/spécial"
+          placeholder="Ex. MdpTest123!"
           required
+          minLength={8}
+          pattern={PASSWORD_HTML_PATTERN}
+          autoComplete="new-password"
+          aria-describedby="password-hint"
         />
+        <p id="password-hint" className="m-0 mt-1.5 text-xs text-slate-500">
+          {PASSWORD_REQUIREMENTS_MESSAGE}
+        </p>
       </div>
 
       <button

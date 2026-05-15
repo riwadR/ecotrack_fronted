@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
-import {
-  isValidUsername,
-  USERNAME_VALIDATION_MESSAGE,
-} from "@/lib/validation/username";
+import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from "@/lib/validation/password";
+import { getUsernameFieldError } from "@/lib/validation/username";
+
+function messageFromBackendErrorBody(text: string): string {
+  if (!text.trim()) {
+    return "Impossible de créer le compte.";
+  }
+  try {
+    const data = JSON.parse(text) as Record<string, unknown>;
+    if (typeof data.message === "string" && data.message.length > 0) {
+      return data.message;
+    }
+    const fieldMessages = Object.values(data).filter(
+      (v): v is string => typeof v === "string" && v.length > 0
+    );
+    if (fieldMessages.length > 0) {
+      return fieldMessages.join(" ");
+    }
+  } catch {
+    return text;
+  }
+  return text;
+}
 
 export async function POST(request: Request) {
   const { username, firstName, lastName, email, password, dateOfBirth } =
@@ -15,9 +34,14 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isValidUsername(String(username))) {
+  const usernameError = getUsernameFieldError(String(username));
+  if (usernameError) {
+    return NextResponse.json({ message: usernameError }, { status: 400 });
+  }
+
+  if (!isValidPassword(String(password))) {
     return NextResponse.json(
-      { message: USERNAME_VALIDATION_MESSAGE },
+      { message: PASSWORD_REQUIREMENTS_MESSAGE },
       { status: 400 }
     );
   }
@@ -48,7 +72,7 @@ export async function POST(request: Request) {
   const text = await res.text().catch(() => "");
   if (!res.ok) {
     return NextResponse.json(
-      { message: text || "Impossible de créer le compte." },
+      { message: messageFromBackendErrorBody(text) },
       { status: res.status }
     );
   }
