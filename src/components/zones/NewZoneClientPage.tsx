@@ -5,25 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CreateZonePayload } from "@/models/zone";
 import { createZone } from "@/services/api/zones";
+import {
+  APP_FORM_CONTROL_CLASS,
+  APP_FORM_LABEL_CLASS,
+  DATA_LABEL_CLASS,
+  PAGE_DESCRIPTION_CLASS,
+  PAGE_STACK_CLASS,
+  PAGE_TITLE_CLASS,
+  SECTION_DESCRIPTION_CLASS,
+  SECTION_TITLE_CLASS,
+} from "@/lib/ui/appChrome";
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "10px",
-  border: "1px solid #e2e8f0",
-  outline: "none",
-  fontSize: "14px",
-  color: "#0f172a",
-  background: "#fff",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: "8px",
-  color: "#0f172a",
-  fontWeight: 600,
-  fontSize: "14px",
-};
+const textareaClass = `${APP_FORM_CONTROL_CLASS} resize-y font-mono text-[13px]`;
 
 export default function NewZoneClientPage() {
   const router = useRouter();
@@ -60,7 +53,9 @@ export default function NewZoneClientPage() {
     }
 
     if (!form.wktPolygon.trim()) {
-      setError("Le polygone WKT est obligatoire (voir la documentation API des zones).");
+      setError(
+        "Le polygone WKT est obligatoire (voir la documentation API des zones)."
+      );
       return;
     }
 
@@ -80,171 +75,115 @@ export default function NewZoneClientPage() {
         router.push("/dashboard/infrastructure");
       }, 700);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de créer la zone.");
+      setError(
+        err instanceof Error ? err.message : "Impossible de créer la zone."
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "16px",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
+    <div className={PAGE_STACK_CLASS}>
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p style={{ margin: "0 0 6px", color: "#94a3b8", fontSize: "13px" }}>
+          <p className="m-0 mb-1.5 text-xs font-medium text-slate-500">
             Zones &amp; Conteneurs / Nouvelle zone
           </p>
-          <h1 style={{ margin: "0 0 4px", color: "#0f172a" }}>
-            Créer une zone
-          </h1>
-          <p style={{ margin: 0, color: "#64748b" }}>
+          <h1 className={PAGE_TITLE_CLASS}>Créer une zone</h1>
+          <p className={PAGE_DESCRIPTION_CLASS}>
             Ajoute une nouvelle zone de collecte au dashboard EcoTrack.
           </p>
         </div>
 
         <Link
           href="/dashboard/infrastructure"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            textDecoration: "none",
-            background: "#fff",
-            color: "#0f172a",
-            padding: "10px 16px",
-            borderRadius: "10px",
-            fontWeight: 700,
-            border: "1px solid #e2e8f0",
-          }}
+          className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 no-underline shadow-sm transition hover:bg-slate-50"
         >
           Retour aux zones
         </Link>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.1fr 0.9fr",
-          gap: "24px",
-        }}
-        className="zones-new-grid"
-      >
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-            borderTop: "3px solid #16a34a",
-          }}
-        >
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-2xl border border-slate-200 border-t-[3px] border-t-emerald-600 bg-white p-6 shadow-md shadow-slate-200/40">
+          <form className="grid gap-4 sm:gap-[18px]" onSubmit={handleSubmit}>
             <div>
-              <label style={labelStyle}>Nom de la zone</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="zone-name">
+                Nom de la zone
+              </label>
               <input
+                id="zone-name"
                 type="text"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Ex. Zone Nord"
-                style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Polygone (WKT)</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="zone-wkt">
+                Polygone (WKT)
+              </label>
               <textarea
+                id="zone-wkt"
+                className={textareaClass}
                 value={form.wktPolygon}
                 onChange={(e) => handleChange("wktPolygon", e.target.value)}
-                placeholder='POLYGON ((2.34 48.85, 2.35 48.85, 2.35 48.86, 2.34 48.86, 2.34 48.85))'
+                placeholder="POLYGON ((2.34 48.85, 2.35 48.85, 2.35 48.86, 2.34 48.86, 2.34 48.85))"
                 rows={4}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  fontFamily: "ui-monospace, monospace",
-                  fontSize: "13px",
-                }}
               />
-              <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: "12px" }}>
-                Ordre des coordonnées : longitude puis latitude pour chaque sommet ; premier et dernier point identiques.
+              <p className="m-0 mt-1.5 text-xs text-slate-500">
+                Ordre des coordonnées : longitude puis latitude pour chaque
+                sommet ; premier et dernier point identiques.
               </p>
             </div>
 
             <div>
-              <label style={labelStyle}>Ville</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="zone-city">
+                Ville
+              </label>
               <input
+                id="zone-city"
                 type="text"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.city || ""}
                 onChange={(e) => handleChange("city", e.target.value)}
                 placeholder="Ex. Moissy-Cramayel"
-                style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Description</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="zone-desc">
+                Description
+              </label>
               <textarea
+                id="zone-desc"
+                className={`${APP_FORM_CONTROL_CLASS} resize-y`}
                 value={form.description || ""}
                 onChange={(e) => handleChange("description", e.target.value)}
                 placeholder="Décris la zone, son secteur ou son usage..."
                 rows={5}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                }}
               />
             </div>
 
             {error ? (
-              <div
-                style={{
-                  background: "#fee2e2",
-                  color: "#dc2626",
-                  borderRadius: "12px",
-                  padding: "12px 14px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
+              <div className="rounded-xl bg-red-50 px-3.5 py-3 text-sm font-semibold text-red-700">
                 {error}
               </div>
             ) : null}
 
             {success ? (
-              <div
-                style={{
-                  background: "#dcfce7",
-                  color: "#16a34a",
-                  borderRadius: "12px",
-                  padding: "12px 14px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
+              <div className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm font-semibold text-emerald-800">
                 {success}
               </div>
             ) : null}
 
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <div className="flex flex-wrap gap-3">
               <button
                 type="submit"
                 disabled={submitting}
-                style={{
-                  background: "#16a34a",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "10px",
-                  padding: "12px 18px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  opacity: submitting ? 0.7 : 1,
-                }}
+                className="rounded-lg bg-emerald-600 px-[18px] py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {submitting ? "Création..." : "Créer la zone"}
               </button>
@@ -252,15 +191,7 @@ export default function NewZoneClientPage() {
               <button
                 type="button"
                 onClick={() => router.push("/dashboard/infrastructure")}
-                style={{
-                  background: "#fff",
-                  color: "#0f172a",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "10px",
-                  padding: "12px 18px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
+                className="rounded-lg border border-slate-200 bg-white px-[18px] py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50"
               >
                 Annuler
               </button>
@@ -268,68 +199,45 @@ export default function NewZoneClientPage() {
           </form>
         </div>
 
-        <div style={{ display: "grid", gap: "24px" }}>
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "16px",
-              padding: "24px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-            }}
-          >
-            <h2 style={{ margin: "0 0 6px", color: "#0f172a" }}>Aperçu</h2>
-            <p style={{ margin: "0 0 18px", color: "#64748b" }}>
+        <div className="grid gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/40">
+            <h2 className={SECTION_TITLE_CLASS}>Aperçu</h2>
+            <p className={`${SECTION_DESCRIPTION_CLASS} mb-[18px]`}>
               Vérifie les informations avant validation.
             </p>
 
-            <div
-              style={{
-                display: "grid",
-                gap: "14px",
-                background: "#f8fafc",
-                borderRadius: "12px",
-                padding: "16px",
-              }}
-            >
+            <div className="grid gap-3.5 rounded-xl bg-slate-50 p-4">
               <div>
-                <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>Nom</p>
-                <p style={{ margin: 0, color: "#0f172a", fontWeight: 700 }}>
+                <p className={DATA_LABEL_CLASS}>Nom</p>
+                <p className="m-0 font-bold text-slate-900">
                   {form.name.trim() || "—"}
                 </p>
               </div>
 
               <div>
-                <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>Ville</p>
-                <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>
+                <p className={DATA_LABEL_CLASS}>Ville</p>
+                <p className="m-0 font-semibold text-slate-900">
                   {form.city?.trim() || "—"}
                 </p>
               </div>
 
               <div>
-                <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
-                  Description
-                </p>
-                <p style={{ margin: 0, color: "#64748b", lineHeight: 1.5 }}>
-                  {form.description?.trim() || "Aucune description renseignée."}
+                <p className={DATA_LABEL_CLASS}>Description</p>
+                <p className="m-0 leading-relaxed text-slate-600">
+                  {form.description?.trim() ||
+                    "Aucune description renseignée."}
                 </p>
               </div>
             </div>
           </div>
 
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "16px",
-              padding: "24px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-            }}
-          >
-            <h2 style={{ margin: "0 0 6px", color: "#0f172a" }}>Conseils</h2>
-            <p style={{ margin: "0 0 14px", color: "#64748b" }}>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/40">
+            <h2 className={SECTION_TITLE_CLASS}>Conseils</h2>
+            <p className={`${SECTION_DESCRIPTION_CLASS} mb-3.5`}>
               Quelques bonnes pratiques pour nommer les zones.
             </p>
 
-            <div style={{ display: "grid", gap: "10px" }}>
+            <div className="grid gap-2.5">
               {[
                 "Utilise un nom clair et stable, par exemple Zone Nord ou Centre-Ville.",
                 "Ajoute la ville si plusieurs communes sont gérées.",
@@ -337,13 +245,7 @@ export default function NewZoneClientPage() {
               ].map((item) => (
                 <div
                   key={item}
-                  style={{
-                    background: "#f8fafc",
-                    borderRadius: "12px",
-                    padding: "12px 14px",
-                    color: "#475569",
-                    fontSize: "14px",
-                  }}
+                  className="rounded-xl bg-slate-50 px-3.5 py-3 text-sm text-slate-600"
                 >
                   {item}
                 </div>
@@ -352,15 +254,6 @@ export default function NewZoneClientPage() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        .zones-new-grid { grid-template-columns: 1.1fr 0.9fr; }
-
-        @media (max-width: 991px) {
-          .zones-new-grid { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </div>
   );
 }
-

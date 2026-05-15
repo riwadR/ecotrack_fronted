@@ -56,20 +56,22 @@ export function configureLeafletDrawFrench(): void {
 
   drawHandlers.polyline.error =
     "<strong>Erreur :</strong> les bords du polygone ne peuvent pas se croiser.";
-  drawHandlers.polyline.tooltip.start = "Cliquez pour commencer la ligne.";
-  drawHandlers.polyline.tooltip.cont = "Cliquez pour poursuivre la ligne.";
-  drawHandlers.polyline.tooltip.end = "Cliquez sur le dernier point pour terminer.";
+  drawHandlers.polyline.tooltip.start = "Placez le premier point de la ligne sur la carte.";
+  drawHandlers.polyline.tooltip.cont = "Ajoutez un point pour poursuivre la ligne.";
+  drawHandlers.polyline.tooltip.end = "Repassez sur le dernier point pour terminer.";
 
-  drawHandlers.polygon.tooltip.start = "Cliquez pour placer le premier sommet du secteur.";
-  drawHandlers.polygon.tooltip.cont = "Cliquez pour ajouter un sommet.";
-  drawHandlers.polygon.tooltip.end = "Cliquez sur le premier point pour fermer le secteur.";
+  drawHandlers.polygon.tooltip.start = "Placez le premier sommet du secteur.";
+  drawHandlers.polygon.tooltip.cont = "Ajoutez un sommet au contour.";
+  drawHandlers.polygon.tooltip.end = "Refermez sur le premier point pour terminer le secteur.";
 
-  drawHandlers.rectangle.tooltip.start = "Cliquez et faites glisser pour dessiner un rectangle.";
-  drawHandlers.circle.tooltip.start = "Cliquez et faites glisser pour dessiner un cercle.";
+  drawHandlers.rectangle.tooltip.start =
+    "Délimitez un rectangle : enfoncez, faites glisser, puis relâchez sur la carte.";
+  drawHandlers.circle.tooltip.start =
+    "Délimitez un cercle : enfoncez, faites glisser pour le rayon, puis relâchez.";
   drawHandlers.circle.radius = "Rayon";
-  drawHandlers.marker.tooltip.start = "Cliquez sur la carte pour placer le marqueur.";
-  drawHandlers.circlemarker.tooltip.start = "Cliquez sur la carte pour placer le marqueur.";
-  drawHandlers.simpleshape.tooltip.end = "Relâchez la souris pour terminer.";
+  drawHandlers.marker.tooltip.start = "Indiquez l’emplacement du marqueur sur la carte.";
+  drawHandlers.circlemarker.tooltip.start = "Indiquez l’emplacement du marqueur sur la carte.";
+  drawHandlers.simpleshape.tooltip.end = "Relâchez pour terminer.";
 
   const { toolbar: editToolbar, handlers: editHandlers } = local.edit;
   editToolbar.actions.save.title = "Enregistrer les modifications";
@@ -84,7 +86,7 @@ export function configureLeafletDrawFrench(): void {
   editToolbar.buttons.removeDisabled = "Aucun secteur à supprimer";
 
   editHandlers.edit.tooltip.text =
-    "Faites glisser les sommets ou le secteur pour ajuster le contour.";
-  editHandlers.edit.tooltip.subtext = "Cliquez sur « Enregistrer » pour valider.";
-  editHandlers.remove.tooltip.text = "Cliquez sur un secteur pour le retirer de la carte.";
+    "Déplacez les sommets ou faites glisser le secteur pour ajuster le tracé.";
+  editHandlers.edit.tooltip.subtext = "Validez avec « Enregistrer ».";
+  editHandlers.remove.tooltip.text = "Sélectionnez un secteur sur la carte pour le retirer.";
 }

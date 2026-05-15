@@ -6,6 +6,7 @@ import { Fragment, type ReactNode } from "react";
 import { MapContainer, Polygon, TileLayer } from "react-leaflet";
 import type { Container, Zone } from "@/models/map";
 import type { Role } from "@/models/user";
+import { MAP_FRAME_CLASS_CITIZEN } from "@/lib/map/mapShellLayout";
 import ContainerMarker from "./ContainerMarker";
 import LocateMeControl from "./LocateMeControl";
 import MapResizeBridge from "./MapResizeBridge";
@@ -62,7 +63,8 @@ export const CITIZEN_ZONE_PATH_OPTIONS: PathOptions = {
 };
 
 /**
- * Leaflet map with OSM tiles, collection-zone polygons, and container markers.
+ * Leaflet operational map: zones, citizen markers, locate-me, optional overlays.
+ * Frame sizing uses `@/lib/map/mapShellLayout` (`MAP_FRAME_CLASS_CITIZEN`) for responsive viewports.
  */
 export default function InteractiveMap({
   containers,
@@ -96,14 +98,16 @@ export default function InteractiveMap({
         <p className="m-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">{operationalNotice}</p>
       ) : null}
       <div
-        className={["relative z-0 h-[min(70vh,560px)] w-full overflow-hidden rounded-xl", className]
-          .filter(Boolean)
-          .join(" ")}
+        className={[MAP_FRAME_CLASS_CITIZEN, className].filter(Boolean).join(" ")}
       >
         <MapContainer
           center={center}
           zoom={zoom}
-          className="h-full w-full rounded-xl [&_.leaflet-control-attribution]:text-[10px] [&_.ecotrack-locate-wrapper]:mr-3 [&_.ecotrack-locate-wrapper]:mt-3"
+          className={
+            "h-full min-h-0 min-w-0 w-full rounded-xl [&_.leaflet-control-attribution]:max-sm:text-[9px] " +
+            "[&_.leaflet-control-attribution]:text-[10px] [&_.ecotrack-locate-wrapper]:mr-[max(0.75rem,env(safe-area-inset-right))] " +
+            "[&_.ecotrack-locate-wrapper]:mt-[max(0.75rem,env(safe-area-inset-top))]"
+          }
           scrollWheelZoom
         >
           <MapResizeBridge />

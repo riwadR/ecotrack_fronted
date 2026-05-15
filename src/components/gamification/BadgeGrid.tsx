@@ -40,7 +40,7 @@ export default function BadgeGrid({
           Le catalogue de badges est indisponible pour le moment.
         </p>
       ) : locked.length === 0 ? null : (
-        <div className="flex w-full flex-wrap justify-start gap-4 sm:gap-5">
+        <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 sm:gap-4">
           {locked.map((badge, index) => (
             <BadgeCard
               key={badge.id}

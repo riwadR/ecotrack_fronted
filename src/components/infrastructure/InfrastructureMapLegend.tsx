@@ -12,7 +12,12 @@ const LEGEND_ITEMS = [
 export default function InfrastructureMapLegend() {
   return (
     <div
-      className="pointer-events-none absolute bottom-4 right-4 z-[500] rounded-xl border border-slate-200 bg-white/95 px-3 py-2.5 text-xs text-slate-700 shadow-md backdrop-blur-sm"
+      className={
+        "pointer-events-none absolute bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))] " +
+        "right-[max(0.75rem,env(safe-area-inset-right,0px))] z-[500] max-w-[min(17rem,calc(100vw-1.25rem))] " +
+        "rounded-xl border border-slate-200 bg-white/95 px-2.5 py-2 text-[11px] text-slate-700 shadow-md " +
+        "backdrop-blur-sm sm:bottom-4 sm:right-4 sm:px-3 sm:py-2.5 sm:text-xs"
+      }
       aria-label="Légende des conteneurs"
     >
       <p className="m-0 mb-2 font-semibold text-slate-900">Légende</p>

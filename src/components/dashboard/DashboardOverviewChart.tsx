@@ -13,11 +13,11 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
-ChartJS.register(
-  CategoryScale, LinearScale, PointElement,
-  LineElement, BarElement, Tooltip, Legend, Filler
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler);
 
+/**
+ * Last-7-days activity chart — fixed-height canvas container keeps layout stable on phones when `maintainAspectRatio` is disabled.
+ */
 export default function DashboardOverviewChart() {
   const data = {
     labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
@@ -45,29 +45,29 @@ export default function DashboardOverviewChart() {
     ],
   };
 
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top" as const,
+        labels: { boxWidth: 12 },
+      },
+    },
+    scales: {
+      y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.04)" } },
+      x: { grid: { display: false } },
+    },
+  };
+
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: "16px",
-        padding: "24px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-      }}
-    >
-      <h2 style={{ margin: "0 0 20px", fontSize: "16px", color: "#0f172a" }}>
+    <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5 md:p-6">
+      <h2 className="m-0 mb-5 text-base font-semibold leading-tight text-slate-900 sm:mb-6 md:text-lg">
         📊 Activité des 7 derniers jours
       </h2>
-      <Line
-        data={data}
-        options={{
-          responsive: true,
-          plugins: { legend: { position: "top" } },
-          scales: {
-            y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.04)" } },
-            x: { grid: { display: false } },
-          },
-        }}
-      />
-    </div>
+      <div className="relative mx-auto h-56 min-h-[14rem] w-full max-w-full sm:h-[18rem] md:h-80 md:max-w-none">
+        <Line data={data} options={options} aria-label="Graphique ligne des collectes et alertes par jour" />
+      </div>
+    </section>
   );
 }

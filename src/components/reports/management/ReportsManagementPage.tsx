@@ -7,6 +7,7 @@ import ReportToast from "@/components/reports/ReportToast";
 import ReportCard from "@/components/reports/management/ReportCard";
 import ReportReviewDrawer from "@/components/reports/management/ReportReviewDrawer";
 import ReportStatusTabs from "@/components/reports/management/ReportStatusTabs";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 const EMPTY_COUNTS: Record<ReportManagementTabStatus, number> = {
   PENDING: 0,
@@ -119,16 +120,13 @@ export default function ReportsManagementPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Gestion des signalements</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className={PAGE_TITLE_CLASS}>Gestion des signalements</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
           Validez, rejetez ou résolvez les signalements citoyens et agents. Vue par défaut : en attente.
         </p>
       </header>
 
-      <section
-        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-        style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}
-      >
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/40 sm:p-5">
         <ReportStatusTabs
           activeStatus={activeTab}
           counts={tabCounts}

@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  APP_FORM_CONTROL_CLASS,
+  APP_FORM_LABEL_CLASS,
+  PAGE_DESCRIPTION_CLASS,
+  PAGE_STACK_CLASS,
+  PAGE_TITLE_CLASS,
+} from "@/lib/ui/appChrome";
 import { CreateContainerPayload, WasteType } from "@/models/container";
 import { Zone } from "@/models/zone";
 import { createContainer } from "@/services/api/containers";
@@ -15,25 +22,6 @@ const wasteTypes: WasteType[] = [
   "ORGANIC",
   "MIXED",
 ];
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "10px",
-  border: "1px solid #e2e8f0",
-  outline: "none",
-  fontSize: "14px",
-  color: "#0f172a",
-  background: "#fff",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: "8px",
-  color: "#0f172a",
-  fontWeight: 600,
-  fontSize: "14px",
-};
 
 export default function NewContainerPage() {
   const router = useRouter();
@@ -135,46 +123,42 @@ export default function NewContainerPage() {
   };
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div className={PAGE_STACK_CLASS}>
       <div>
-        <h1 style={{ margin: "0 0 4px", color: "#0f172a" }}>
-          Nouveau container
-        </h1>
-        <p style={{ margin: 0, color: "#64748b" }}>
+        <h1 className={PAGE_TITLE_CLASS}>Nouveau container</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
           Ajoute un nouveau container à une zone existante.
         </p>
       </div>
 
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "16px",
-          padding: "24px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-          borderTop: "3px solid #0ea5e9",
-        }}
-      >
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }} className="form-grid">
+      <div className="rounded-2xl border border-slate-200 border-t-[3px] border-t-sky-500 bg-white p-6 shadow-md shadow-slate-200/40">
+        <form className="grid gap-5" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label style={labelStyle}>Nom du container</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="new-c-name">
+                Nom du container
+              </label>
               <input
+                id="new-c-name"
                 type="text"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Ex. Container Centre 01"
-                style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Type de déchet</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="new-c-waste">
+                Type de déchet
+              </label>
               <select
+                id="new-c-waste"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.wasteType}
                 onChange={(e) =>
                   handleChange("wasteType", e.target.value as WasteType)
                 }
-                style={inputStyle}
               >
                 {wasteTypes.map((type) => (
                   <option key={type} value={type}>
@@ -185,11 +169,14 @@ export default function NewContainerPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Zone</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="new-c-zone">
+                Zone
+              </label>
               <select
+                id="new-c-zone"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.zoneId}
                 onChange={(e) => handleChange("zoneId", e.target.value)}
-                style={inputStyle}
                 disabled={loadingZones}
               >
                 <option value="">
@@ -204,21 +191,28 @@ export default function NewContainerPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Adresse</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="new-c-addr">
+                Adresse
+              </label>
               <input
+                id="new-c-addr"
                 type="text"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.address || ""}
                 onChange={(e) => handleChange("address", e.target.value)}
                 placeholder="Ex. 12 rue des capteurs"
-                style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Latitude</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="new-c-lat">
+                Latitude
+              </label>
               <input
+                id="new-c-lat"
                 type="number"
                 step="any"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.latitude ?? ""}
                 onChange={(e) =>
                   handleChange(
@@ -227,15 +221,18 @@ export default function NewContainerPage() {
                   )
                 }
                 placeholder="Ex. 48.6351"
-                style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Longitude</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="new-c-lon">
+                Longitude
+              </label>
               <input
+                id="new-c-lon"
                 type="number"
                 step="any"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.longitude ?? ""}
                 onChange={(e) =>
                   handleChange(
@@ -244,55 +241,27 @@ export default function NewContainerPage() {
                   )
                 }
                 placeholder="Ex. 2.5760"
-                style={inputStyle}
               />
             </div>
           </div>
 
           {error ? (
-            <div
-              style={{
-                background: "#fee2e2",
-                color: "#dc2626",
-                borderRadius: "12px",
-                padding: "12px 14px",
-                fontSize: "14px",
-                fontWeight: 600,
-              }}
-            >
+            <div className="rounded-xl bg-red-50 px-3.5 py-3 text-sm font-semibold text-red-700">
               {error}
             </div>
           ) : null}
 
           {success ? (
-            <div
-              style={{
-                background: "#dcfce7",
-                color: "#16a34a",
-                borderRadius: "12px",
-                padding: "12px 14px",
-                fontSize: "14px",
-                fontWeight: 600,
-              }}
-            >
+            <div className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm font-semibold text-emerald-800">
               {success}
             </div>
           ) : null}
 
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <div className="flex flex-wrap gap-3">
             <button
               type="submit"
               disabled={submitting}
-              style={{
-                background: "#0ea5e9",
-                color: "#fff",
-                border: "none",
-                borderRadius: "10px",
-                padding: "12px 18px",
-                fontWeight: 700,
-                cursor: "pointer",
-                opacity: submitting ? 0.7 : 1,
-              }}
+              className="rounded-lg bg-emerald-600 px-[18px] py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {submitting ? "Création..." : "Créer le container"}
             </button>
@@ -300,28 +269,13 @@ export default function NewContainerPage() {
             <button
               type="button"
               onClick={() => router.push("/dashboard/capteurs")}
-              style={{
-                background: "#fff",
-                color: "#0f172a",
-                border: "1px solid #e2e8f0",
-                borderRadius: "10px",
-                padding: "12px 18px",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
+              className="rounded-lg border border-slate-200 bg-white px-[18px] py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50"
             >
               Annuler
             </button>
           </div>
         </form>
       </div>
-
-      <style>{`
-        .form-grid { grid-template-columns: 1fr 1fr; }
-        @media (max-width: 767px) {
-          .form-grid { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </div>
   );
 }

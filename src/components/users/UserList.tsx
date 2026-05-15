@@ -1,141 +1,109 @@
-"use client";
+import type { ReactNode } from "react";
 
-import { User } from "@/models/user";
+import type { Role, User } from "@/models/user";
 
 type UserListProps = {
   users: User[];
 };
 
-function getInitials(username: string, firstName: string, lastName: string) {
-  const source = username || `${firstName} ${lastName}`.trim();
-  if (!source) return "?";
-  const parts = source.split(/[\s._-]+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return source.slice(0, 2).toUpperCase();
-}
-
-const COLORS = ["#0ea5e9", "#16a34a", "#8b5cf6", "#f59e0b", "#ef4444"];
+const ROLE_LABEL_FR: Record<Role, string> = {
+  ADMIN: "Administrateur",
+  MANAGER: "Gestionnaire",
+  AGENT: "Agent",
+  CITIZEN: "Citoyen",
+};
 
 export function UserList({ users }: UserListProps) {
   if (users.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: "48px", color: "#94a3b8" }}>
-        <p style={{ fontSize: "40px", margin: "0 0 12px" }}>👤</p>
-        <p style={{ margin: 0, fontWeight: 600, color: "#64748b" }}>Aucun utilisateur</p>
-        <p style={{ margin: "4px 0 0", fontSize: "14px" }}>
+      <div className="py-12 text-center text-slate-400">
+        <p className="m-0 text-[40px] leading-none mb-3">👤</p>
+        <p className="m-0 font-semibold text-slate-500">Aucun utilisateur</p>
+        <p className="mt-1 text-sm">
           Les utilisateurs apparaîtront ici une fois l&apos;API connectée.
         </p>
       </div>
     );
   }
 
+  const thClass =
+    "px-4 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400";
+
+  const tdRowClass =
+    "border-b border-slate-100 px-4 py-3 align-middle transition-colors hover:bg-slate-50/80";
+
   return (
-    <div style={{ overflowX: "auto" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.2fr 1fr 1fr 1.5fr 0.8fr",
-          padding: "10px 16px",
-          borderBottom: "1px solid #e2e8f0",
-          color: "#94a3b8",
-          fontSize: "12px",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        <span>Pseudo</span>
-        <span>Prénom</span>
-        <span>Nom</span>
-        <span>Email</span>
-        <span>Statut</span>
+    <div className="min-w-0">
+      <div className="hidden lg:block overflow-x-auto">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200">
+              <th className={thClass}>Pseudo</th>
+              <th className={thClass}>Prénom</th>
+              <th className={thClass}>Nom</th>
+              <th className={thClass}>Email</th>
+              <th className={thClass}>Rôle</th>
+              <th className={thClass}>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id} className={tdRowClass}>
+                <td className="font-semibold text-slate-900">{user.username || "—"}</td>
+                <td className="text-slate-900">{user.firstName || "—"}</td>
+                <td className="text-slate-900">{user.lastName || "—"}</td>
+                <td className="text-slate-500">{user.email}</td>
+                <td className="text-slate-900">{ROLE_LABEL_FR[user.role] ?? user.role}</td>
+                <td>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+                    <span className="size-1.5 rounded-full bg-green-600" aria-hidden />
+                    Actif
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {users.map((user, i) => {
-        const color = COLORS[i % COLORS.length];
-        const displayUsername = user.username || "—";
-        return (
-          <div
+      <ul className="m-0 list-none space-y-4 p-0 lg:hidden">
+        {users.map((user) => (
+          <li
             key={user.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.2fr 1fr 1fr 1.5fr 0.8fr",
-              padding: "14px 16px",
-              borderBottom: "1px solid #f1f5f9",
-              alignItems: "center",
-              transition: "background 0.15s",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "#f8fafc")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "transparent")
-            }
+            className="block rounded-lg border border-slate-100 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  backgroundColor: color,
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 700,
-                  fontSize: "13px",
-                  flexShrink: 0,
-                }}
-              >
-                {getInitials(user.username, user.firstName, user.lastName)}
-              </div>
-              <span style={{ fontWeight: 600, color: "#0f172a", fontSize: "14px" }}>
-                {displayUsername}
-              </span>
-            </div>
-
-            <span style={{ color: "#0f172a", fontSize: "14px" }}>
-              {user.firstName || "—"}
-            </span>
-            <span style={{ color: "#0f172a", fontSize: "14px" }}>
-              {user.lastName || "—"}
-            </span>
-            <span style={{ color: "#64748b", fontSize: "14px" }}>{user.email}</span>
-
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                background: "#dcfce7",
-                color: "#16a34a",
-                fontSize: "12px",
-                fontWeight: 600,
-                padding: "3px 10px",
-                borderRadius: "999px",
-              }}
-            >
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "#16a34a",
-                  display: "inline-block",
-                }}
+            <div className="flex flex-col divide-y divide-slate-100">
+              <MobileField label="Pseudo" value={user.username || "—"} />
+              <MobileField label="Prénom" value={user.firstName || "—"} />
+              <MobileField label="Nom" value={user.lastName || "—"} />
+              <MobileField label="E-mail" value={user.email} />
+              <MobileField label="Rôle" value={ROLE_LABEL_FR[user.role] ?? user.role} />
+              <MobileField
+                label="Statut"
+                value={
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+                    <span className="size-1.5 rounded-full bg-green-600" aria-hidden />
+                    Actif
+                  </span>
+                }
               />
-              Actif
-            </span>
-          </div>
-        );
-      })}
+            </div>
+          </li>
+        ))}
+      </ul>
 
-      <div style={{ padding: "12px 16px", color: "#94a3b8", fontSize: "13px" }}>
+      <p className="m-0 border-t border-slate-100 px-1 py-3 text-[13px] text-slate-400 lg:border-0 lg:px-4">
         {users.length} utilisateur{users.length > 1 ? "s" : ""}
-      </div>
+      </p>
+    </div>
+  );
+}
+
+function MobileField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+      <span className="shrink-0 text-sm font-semibold text-slate-500">{label} :</span>
+      <div className="min-w-0 text-right text-sm text-slate-900">{value}</div>
     </div>
   );
 }

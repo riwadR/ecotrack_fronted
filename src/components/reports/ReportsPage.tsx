@@ -11,19 +11,21 @@ import { fetchZonesForMap } from "@/services/api/mapDataSource";
 import { getContainers } from "@/services/api/containers";
 import { createReport } from "@/services/api/reports";
 import { usePeriodicRefresh } from "@/hooks/usePeriodicRefresh";
+import { MAP_LOADING_CLASS_CITIZEN } from "@/lib/map/mapShellLayout";
 import ContainerSearchCombobox from "@/components/reports/ContainerSearchCombobox";
-
-const MAP_CONTAINERS_REFRESH_MS = 15_000;
 import ContainerDetailsDrawer from "@/components/reports/ContainerDetailsDrawer";
 import ReportFormModal from "@/components/reports/ReportFormModal";
 import CitizenReportSuccessModal from "@/components/reports/CitizenReportSuccessModal";
 import ReportToast from "@/components/reports/ReportToast";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
+
+const MAP_CONTAINERS_REFRESH_MS = 15_000;
 
 const InteractiveMap = dynamic(() => import("@/components/map/InteractiveMap"), {
   ssr: false,
   loading: () => (
     <div
-      className="flex h-[min(70vh,560px)] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600"
+      className={MAP_LOADING_CLASS_CITIZEN}
       role="status"
     >
       Chargement de la carte…
@@ -185,10 +187,10 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Carte & Signalements</h1>
-        <p className="text-sm text-slate-600">
+    <div className="flex flex-col gap-4 md:gap-6">
+      <header className="flex flex-col gap-1 px-0.5">
+        <h1 className={PAGE_TITLE_CLASS}>Carte & Signalements</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
           Consultez les secteurs, sélectionnez un conteneur sur la carte ou via la recherche, puis
           décrivez le problème constaté sur le terrain.
         </p>
@@ -210,7 +212,7 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4 md:p-5">
         <ContainerSearchCombobox
           containers={containers}
           value={searchTerm}
@@ -222,7 +224,7 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
         <section className="mt-4">
           {isLoading ? (
             <div
-              className="flex h-[min(70vh,560px)] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600"
+              className={MAP_LOADING_CLASS_CITIZEN}
               role="status"
             >
               Chargement des conteneurs…

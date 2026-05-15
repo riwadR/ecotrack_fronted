@@ -4,6 +4,7 @@ import LeaderboardPanel from "@/components/gamification/LeaderboardPanel";
 import GamificationMotionStyles from "@/components/gamification/GamificationMotionStyles";
 import { LeaderboardSkeleton } from "@/components/gamification/GamificationSkeletons";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 export default function LeaderboardDashboard() {
   const { entries, loading, error } = useLeaderboard();
@@ -13,10 +14,8 @@ export default function LeaderboardDashboard() {
       <GamificationMotionStyles />
 
       <header>
-        <h1 className="m-0 mb-1 text-3xl font-extrabold tracking-tight text-slate-900">
-          Classement
-        </h1>
-        <p className="m-0 text-slate-500">
+        <h1 className={PAGE_TITLE_CLASS}>Classement</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
           Les citoyens les plus engagés classés par points et impact CO₂.
         </p>
       </header>

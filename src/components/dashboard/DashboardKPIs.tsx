@@ -5,36 +5,31 @@ const KPIS = [
   { label: "Alertes en cours", value: "7", icon: "⚠️", color: "#f59e0b" },
 ];
 
+/**
+ * Summary KPI tiles for the dashboard home; fluid grid collapses from 4 columns on large desktops.
+ */
 export default function DashboardKPIs() {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: "16px",
-      }}
-    >
+    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" role="list">
       {KPIS.map((kpi) => (
-        <div
+        <li
           key={kpi.label}
-          style={{
-            background: "#fff",
-            borderRadius: "14px",
-            padding: "20px 24px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-            borderTop: `3px solid ${kpi.color}`,
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
+          role="group"
+          className="flex flex-col gap-2 rounded-xl border-x border-b border-slate-100 border-t-[3px] bg-white px-5 py-5 shadow-sm"
+          style={{ borderTopColor: kpi.color }}
         >
-          <span style={{ fontSize: "28px" }}>{kpi.icon}</span>
-          <p style={{ margin: 0, fontSize: "28px", fontWeight: 700, color: kpi.color }}>
+          <span className="text-2xl md:text-[1.85rem]" aria-hidden>
+            {kpi.icon}
+          </span>
+          <p
+            className="m-0 text-2xl font-bold tabular-nums tracking-tight md:text-3xl"
+            style={{ color: kpi.color }}
+          >
             {kpi.value}
           </p>
-          <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>{kpi.label}</p>
-        </div>
+          <p className="m-0 text-sm leading-snug text-slate-600 md:text-[15px]">{kpi.label}</p>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

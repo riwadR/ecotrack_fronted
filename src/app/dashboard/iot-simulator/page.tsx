@@ -1,27 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  APP_FORM_CONTROL_CLASS,
+  APP_FORM_LABEL_CLASS,
+  PAGE_DESCRIPTION_CLASS,
+  PAGE_STACK_CLASS,
+  PAGE_TITLE_CLASS,
+  SECTION_DESCRIPTION_CLASS,
+  SECTION_TITLE_CLASS,
+} from "@/lib/ui/appChrome";
 import { Container, IoTPayload } from "@/models/container";
 import { getContainers, sendIoTPayload } from "@/services/api/containers";
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "10px",
-  border: "1px solid #e2e8f0",
-  outline: "none",
-  fontSize: "14px",
-  color: "#0f172a",
-  background: "#fff",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: "8px",
-  color: "#0f172a",
-  fontWeight: 600,
-  fontSize: "14px",
-};
 
 export default function IoTSimulatorPage() {
   const [containers, setContainers] = useState<Container[]>([]);
@@ -115,40 +105,26 @@ export default function IoTSimulatorPage() {
   };
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div className={PAGE_STACK_CLASS}>
       <div>
-        <h1 style={{ margin: "0 0 4px", color: "#0f172a" }}>
-          Simulateur IoT
-        </h1>
-        <p style={{ margin: 0, color: "#64748b" }}>
+        <h1 className={PAGE_TITLE_CLASS}>Simulateur IoT</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
           Envoie une mesure simulée à un container pour tester le flux backend.
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.2fr 0.8fr",
-          gap: "24px",
-        }}
-        className="iot-grid"
-      >
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-            borderTop: "3px solid #0ea5e9",
-          }}
-        >
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-2xl border border-slate-200 border-t-[3px] border-t-sky-500 bg-white p-6 shadow-md shadow-slate-200/40">
+          <form className="grid gap-4 sm:gap-[18px]" onSubmit={handleSubmit}>
             <div>
-              <label style={labelStyle}>Container</label>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="iot-container">
+                Container
+              </label>
               <select
+                id="iot-container"
+                className={APP_FORM_CONTROL_CLASS}
                 value={form.containerId}
                 onChange={(e) => handleChange("containerId", e.target.value)}
-                style={inputStyle}
                 disabled={loadingContainers}
               >
                 <option value="">
@@ -165,92 +141,68 @@ export default function IoTSimulatorPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>
+              <label className={APP_FORM_LABEL_CLASS} htmlFor="iot-fill">
                 Niveau de remplissage ({form.fillLevel}%)
               </label>
               <input
+                id="iot-fill"
                 type="range"
                 min={0}
                 max={100}
                 value={form.fillLevel}
+                className="h-2 w-full cursor-pointer accent-emerald-600"
                 onChange={(e) =>
                   handleChange("fillLevel", Number(e.target.value))
                 }
-                style={{ width: "100%", accentColor: "#0ea5e9" }}
               />
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: "16px",
-              }}
-              className="iot-fields"
-            >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label style={labelStyle}>Température (°C)</label>
+                <label className={APP_FORM_LABEL_CLASS}>Température (°C)</label>
                 <input
                   type="number"
+                  className={APP_FORM_CONTROL_CLASS}
                   value={form.temperature ?? ""}
                   onChange={(e) =>
                     handleChange("temperature", Number(e.target.value))
                   }
-                  style={inputStyle}
                 />
               </div>
 
               <div>
-                <label style={labelStyle}>Humidité (%)</label>
+                <label className={APP_FORM_LABEL_CLASS}>Humidité (%)</label>
                 <input
                   type="number"
+                  className={APP_FORM_CONTROL_CLASS}
                   value={form.humidity ?? ""}
                   onChange={(e) =>
                     handleChange("humidity", Number(e.target.value))
                   }
-                  style={inputStyle}
                 />
               </div>
 
               <div>
-                <label style={labelStyle}>Batterie (%)</label>
+                <label className={APP_FORM_LABEL_CLASS}>Batterie (%)</label>
                 <input
                   type="number"
+                  className={APP_FORM_CONTROL_CLASS}
                   value={form.batteryLevel ?? ""}
                   onChange={(e) =>
                     handleChange("batteryLevel", Number(e.target.value))
                   }
-                  style={inputStyle}
                 />
               </div>
             </div>
 
             {error ? (
-              <div
-                style={{
-                  background: "#fee2e2",
-                  color: "#dc2626",
-                  borderRadius: "12px",
-                  padding: "12px 14px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
+              <div className="rounded-xl bg-red-50 px-3.5 py-3 text-sm font-semibold text-red-700">
                 {error}
               </div>
             ) : null}
 
             {success ? (
-              <div
-                style={{
-                  background: "#dcfce7",
-                  color: "#16a34a",
-                  borderRadius: "12px",
-                  padding: "12px 14px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
+              <div className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm font-semibold text-emerald-800">
                 {success}
               </div>
             ) : null}
@@ -258,47 +210,21 @@ export default function IoTSimulatorPage() {
             <button
               type="submit"
               disabled={submitting}
-              style={{
-                background: "#0ea5e9",
-                color: "#fff",
-                border: "none",
-                borderRadius: "10px",
-                padding: "12px 18px",
-                fontWeight: 700,
-                cursor: "pointer",
-                opacity: submitting ? 0.7 : 1,
-              }}
+              className="rounded-lg bg-emerald-600 px-[18px] py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {submitting ? "Envoi..." : "Envoyer le payload"}
             </button>
           </form>
         </div>
 
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-          }}
-        >
-          <h2 style={{ margin: "0 0 6px", color: "#0f172a" }}>Aperçu</h2>
-          <p style={{ margin: "0 0 16px", color: "#64748b" }}>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/40">
+          <h2 className={SECTION_TITLE_CLASS}>Aperçu</h2>
+          <p className={`${SECTION_DESCRIPTION_CLASS} mb-4`}>
             Résumé du payload prêt à être envoyé.
           </p>
 
-          <div
-            style={{
-              background: "#f8fafc",
-              borderRadius: "12px",
-              padding: "16px",
-              fontFamily: "monospace",
-              fontSize: "13px",
-              color: "#0f172a",
-              overflowX: "auto",
-            }}
-          >
-            <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+          <div className="overflow-x-auto rounded-xl bg-slate-50 p-4 font-mono text-xs text-slate-900 sm:text-[13px]">
+            <pre className="m-0 whitespace-pre-wrap break-words">
               {JSON.stringify(
                 {
                   containerId: form.containerId,
@@ -315,36 +241,23 @@ export default function IoTSimulatorPage() {
           </div>
 
           {selectedContainer ? (
-            <div style={{ marginTop: "16px", display: "grid", gap: "8px" }}>
-              <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
-                <strong style={{ color: "#0f172a" }}>Nom :</strong>{" "}
+            <div className="mt-4 grid gap-2 text-[13px] text-slate-600">
+              <p className="m-0">
+                <strong className="text-slate-900">Nom :</strong>{" "}
                 {selectedContainer.name}
               </p>
-              <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
-                <strong style={{ color: "#0f172a" }}>Zone :</strong>{" "}
+              <p className="m-0">
+                <strong className="text-slate-900">Zone :</strong>{" "}
                 {selectedContainer.zoneName || "—"}
               </p>
-              <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
-                <strong style={{ color: "#0f172a" }}>Type :</strong>{" "}
+              <p className="m-0">
+                <strong className="text-slate-900">Type :</strong>{" "}
                 {selectedContainer.wasteType}
               </p>
             </div>
           ) : null}
         </div>
       </div>
-
-      <style>{`
-        .iot-grid { grid-template-columns: 1.2fr 0.8fr; }
-        .iot-fields { grid-template-columns: 1fr 1fr 1fr; }
-
-        @media (max-width: 991px) {
-          .iot-grid { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 767px) {
-          .iot-fields { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </div>
   );
 }

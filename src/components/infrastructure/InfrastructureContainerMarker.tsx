@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import L from "leaflet";
 import { Marker, Popup } from "react-leaflet";
 import type { AdminMapContainer } from "@/lib/map/adminMapContainer";
 import { BACKEND_CONTAINER_STATUS_OPTIONS } from "@/lib/containers/backendContainerStatus";
+import { useBelowLgViewport } from "@/hooks/useBelowLgViewport";
+import { usePointerCoarse } from "@/hooks/usePointerCoarse";
 import { getInfrastructureMarkerColor } from "@/lib/map/containerMarkerColor";
 import { getContainerTypeLabel } from "@/lib/containers/containerTypeLabels";
 
@@ -42,17 +44,28 @@ export default function InfrastructureContainerMarker({
   onRequestRelocation,
   onRequestEdit,
 }: InfrastructureContainerMarkerProps) {
+  const markerRef = useRef<L.Marker | null>(null);
+  const belowLg = useBelowLgViewport();
+  const pointerCoarse = usePointerCoarse();
+
   const color = getInfrastructureMarkerColor(container.status, container.fillLevelPercent);
-  const icon = useMemo(
-    () => buildMarkerIcon(color, isRelocating),
-    [color, isRelocating]
-  );
+  const icon = useMemo(() => buildMarkerIcon(color, isRelocating), [color, isRelocating]);
 
   const statusLabel = STATUS_LABEL_BY_VALUE[container.status] ?? container.status;
   const typeLabel = getContainerTypeLabel(container.type);
 
+  const moveHint = pointerCoarse
+    ? "Touchez « Déplacer », puis l’emplacement voulu sur la carte."
+    : "Glissez le marqueur ou utilisez « Déplacer » puis cliquez sur la carte.";
+
+  const runAndClosePopup = (action: () => void) => {
+    markerRef.current?.closePopup();
+    action();
+  };
+
   return (
     <Marker
+      ref={markerRef}
       position={[container.latitude, container.longitude]}
       icon={icon}
       draggable={canManage}
@@ -70,31 +83,33 @@ export default function InfrastructureContainerMarker({
         },
       }}
     >
-      <Popup>
-        <div className="min-w-[200px] p-1 text-sm text-slate-800">
-          <p className="m-0 font-mono font-bold text-slate-900">{container.serialNumber}</p>
+      <Popup maxWidth={belowLg ? 260 : 320}>
+        <div className="min-w-0 max-w-full px-0.5 py-0 text-xs text-slate-800 sm:px-0.5 sm:text-sm">
+          <p className="m-0 font-mono text-sm font-bold leading-tight text-slate-900">
+            {container.serialNumber}
+          </p>
           {container.zoneName ? (
-            <p className="m-0 mt-1 text-slate-600">Secteur : {container.zoneName}</p>
+            <p className="m-0 mt-1 leading-snug text-slate-600">Secteur : {container.zoneName}</p>
           ) : null}
-          <p className="m-0 mt-1 text-slate-600">Type : {typeLabel}</p>
-          <p className="m-0 mt-1 text-slate-600">Statut : {statusLabel}</p>
-          <p className="m-0 mt-1 text-slate-600">Remplissage : {container.fillLevelPercent} %</p>
+          <p className="m-0 mt-0.5 leading-snug text-slate-600">Type : {typeLabel}</p>
+          <p className="m-0 mt-0.5 leading-snug text-slate-600">Statut : {statusLabel}</p>
+          <p className="m-0 mt-0.5 leading-snug text-slate-600">
+            Remplissage : {container.fillLevelPercent} %
+          </p>
           {canManage ? (
-            <div className="mt-2 flex flex-col gap-2 border-t border-slate-200 pt-2">
-              <p className="m-0 text-xs text-slate-500">
-                Sur ordinateur : glissez le marqueur. Sur mobile : utilisez Déplacer.
-              </p>
+            <div className="mt-2 flex flex-col gap-1.5 border-t border-slate-200 pt-2">
+              <p className="m-0 text-[11px] leading-snug text-slate-500">{moveHint}</p>
               <button
                 type="button"
-                className="w-full rounded-md bg-sky-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-700"
-                onClick={() => onRequestRelocation(container)}
+                className="min-h-[40px] w-full rounded-md bg-emerald-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 sm:min-h-0 sm:py-2"
+                onClick={() => runAndClosePopup(() => onRequestRelocation(container))}
               >
                 Déplacer
               </button>
               <button
                 type="button"
-                className="w-full rounded-md bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-900"
-                onClick={() => onRequestEdit(container)}
+                className="min-h-[40px] w-full rounded-md border border-emerald-600 bg-white px-2 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 sm:min-h-0 sm:py-2"
+                onClick={() => runAndClosePopup(() => onRequestEdit(container))}
               >
                 Éditer
               </button>

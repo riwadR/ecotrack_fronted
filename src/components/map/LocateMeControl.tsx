@@ -28,7 +28,7 @@ export default function LocateMeControl() {
         button.type = "button";
         button.title = "Me localiser";
         button.setAttribute("aria-label", "Me localiser sur la carte");
-        button.innerHTML = `<span class="ecotrack-locate-control__icon">${LOCATE_ICON_SVG}</span><span>Me localiser</span>`;
+        button.innerHTML = `<span class="ecotrack-locate-control__icon">${LOCATE_ICON_SVG}</span><span class="ecotrack-locate-control__label">Me localiser</span>`;
 
         const handleClick = (event: Event) => {
           L.DomEvent.stopPropagation(event);

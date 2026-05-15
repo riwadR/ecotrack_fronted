@@ -13,17 +13,14 @@ export default async function DashboardLayout({
   if (!session) redirect("/login");
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc" }}>
+    <div className="flex min-h-screen min-h-[100dvh] bg-slate-50">
       <AuthClientShell />
       <Sidebar role={session.role} username={session.username} />
-      <main
-        style={{
-          flex: 1,
-          padding: "24px",
-          minWidth: 0, // évite overflow sur flex
-          overflowX: "hidden",
-        }}
-      >
+      {/*
+        Mobile: reserve space below fixed header (approx. header + touch bar safe area ceiling).
+        Desktop: lg+ sidebar is in-flow; flush top padding aligned with sidebar content.
+      */}
+      <main className="min-w-0 flex-1 overflow-x-hidden px-4 pb-10 pt-[calc(env(safe-area-inset-top,0px)+4.75rem)] sm:px-6 sm:pb-12 lg:px-8 lg:pb-10 lg:pt-8">
         {children}
       </main>
     </div>

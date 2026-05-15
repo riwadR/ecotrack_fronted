@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { useCallback, useRef } from "react";
 import L from "leaflet";
 import { FeatureGroup, MapContainer, TileLayer } from "react-leaflet";
+import { MAP_FRAME_CLASS_ADMIN } from "@/lib/map/mapShellLayout";
 import ManagedZonePolygons from "@/components/zones/ManagedZonePolygons";
 import type { ReactNode } from "react";
 import type { Role } from "@/models/user";
@@ -52,7 +53,8 @@ export type ZoneManagementMapProps = {
 };
 
 /**
- * Leaflet map for administrative sector review; optional Leaflet.draw polygon tooling.
+ * Leaflet map for administrative sector planning.
+ * Responsive shell sizing lives in `@/lib/map/mapShellLayout` (`MAP_FRAME_CLASS_ADMIN`).
  */
 export default function ZoneManagementMap({
   initialPolygons,
@@ -76,12 +78,16 @@ export default function ZoneManagementMap({
   );
 
   return (
-    <div className="relative flex h-[min(72vh,620px)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+    <div className={MAP_FRAME_CLASS_ADMIN}>
       {showContainerLegend ? <InfrastructureMapLegend /> : null}
       <MapContainer
         center={ZONE_MANAGEMENT_MAP_CENTER}
         zoom={ZONE_MANAGEMENT_MAP_ZOOM}
-        className="h-full w-full min-h-[420px] flex-1 rounded-xl [&_.leaflet-control]:z-[400] [&_.leaflet-top]:top-2 [&_.leaflet-top]:left-2 [&_.leaflet-control-attribution]:text-[10px]"
+        className={
+          "h-full min-h-0 min-w-0 w-full flex-1 rounded-xl [&_.leaflet-control]:z-[400] " +
+          "[&_.leaflet-top]:left-[max(0.5rem,env(safe-area-inset-left))] [&_.leaflet-top]:top-[max(0.5rem,env(safe-area-inset-top))] " +
+          "[&_.leaflet-control-attribution]:max-sm:text-[9px] [&_.leaflet-control-attribution]:text-[10px]"
+        }
         scrollWheelZoom
       >
         <MapResizeBridge />

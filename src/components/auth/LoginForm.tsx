@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { resetSessionExpiredGuard } from "@/lib/api/authSession";
+import { APP_FORM_CONTROL_CLASS, APP_FORM_LABEL_CLASS } from "@/lib/ui/appChrome";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -46,83 +47,50 @@ export default function LoginForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-    >
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <div>
-        <label
-          htmlFor="email"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="email">
           Email
         </label>
         <input
           id="email"
           type="email"
+          className={APP_FORM_CONTROL_CLASS}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="test@test.com"
+          placeholder="vous@exemple.fr"
           required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
       </div>
 
       <div>
-        <label
-          htmlFor="password"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="password">
           Mot de passe
         </label>
         <input
           id="password"
           type="password"
+          className={APP_FORM_CONTROL_CLASS}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="123456"
+          placeholder="••••••••"
           required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        style={{
-          padding: "12px",
-          backgroundColor: isLoading ? "#94a3b8" : "#2563eb",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "10px",
-          fontWeight: 600,
-          cursor: isLoading ? "not-allowed" : "pointer",
-        }}
+        className="rounded-lg bg-emerald-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
       >
         {isLoading ? "Connexion..." : "Se connecter"}
       </button>
 
       {error && (
-        <p style={{ color: "#dc2626", margin: 0, textAlign: "center" }}>
+        <p className="m-0 text-center text-sm font-medium text-red-600">
           {error}
         </p>
       )}
-
-      <p style={{ color: "#64748b", fontSize: "0.9rem", textAlign: "center" }}>
-        Test rapide : utilise <strong>test@test.com</strong> / <strong>123456</strong>
-      </p>
     </form>
   );
 }

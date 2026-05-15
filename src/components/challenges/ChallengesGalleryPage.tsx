@@ -23,6 +23,7 @@ import { ChallengeGallerySkeleton } from "@/components/challenges/ChallengeSkele
 import ReportToast from "@/components/reports/ReportToast";
 import GamificationMotionStyles from "@/components/gamification/GamificationMotionStyles";
 import { useChallengeBoundaryWatch } from "@/hooks/useChallengeBoundaryWatch";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 import { useChallengeClock } from "@/hooks/useChallengeClock";
 import { usePeriodicRefresh } from "@/hooks/usePeriodicRefresh";
 
@@ -151,10 +152,8 @@ export default function ChallengesGalleryPage() {
       <GamificationMotionStyles />
 
       <header>
-        <h1 className="m-0 mb-1 text-3xl font-extrabold tracking-tight text-slate-900">
-          Défis communautaires
-        </h1>
-        <p className="m-0 text-slate-500">
+        <h1 className={PAGE_TITLE_CLASS}>Défis communautaires</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
           Rejoignez des défis en cours ou consultez l&apos;historique de vos participations.
         </p>
       </header>

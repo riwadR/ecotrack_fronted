@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/auth";
 
-import { Role } from "@/models/user";
+import type { Role } from "@/models/user";
 import { resolvePublicUsername } from "@/lib/user/displayUsername";
 import {
   changeUserPassword,
@@ -12,14 +12,12 @@ import {
   updateUserProfile,
   type UserProfileResponse,
 } from "@/services/api/profile";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
-function normalizeDateOfBirthInput(
-  value: UserProfileResponse["dateOfBirth"]
-): string {
+function normalizeDateOfBirthInput(value: UserProfileResponse["dateOfBirth"]): string {
   if (!value) return "";
 
   if (typeof value === "string") {
-    // Accept "YYYY-MM-DD" or ISO strings
     return value.includes("T") ? value.slice(0, 10) : value.slice(0, 10);
   }
 
@@ -33,36 +31,18 @@ function normalizeDateOfBirthInput(
   return "";
 }
 
-function formatFrenchLocalDate(yyyyMmDd?: string) {
-  if (!yyyyMmDd) return "—";
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(yyyyMmDd);
-  if (!m) return yyyyMmDd;
-  const year = Number(m[1]);
-  const monthIndex = Number(m[2]) - 1;
-  const day = Number(m[3]);
-  const d = new Date(year, monthIndex, day);
-  if (Number.isNaN(d.getTime())) return yyyyMmDd;
-  return d.toLocaleDateString("fr-FR");
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "10px",
-  border: "1px solid #e2e8f0",
-  outline: "none",
-  fontSize: "14px",
-  color: "#0f172a",
-  background: "#fff",
+const ROLE_LABEL_FR: Record<Role, string> = {
+  ADMIN: "Administrateur",
+  MANAGER: "Gestionnaire",
+  AGENT: "Agent",
+  CITIZEN: "Citoyen",
 };
 
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: "8px",
-  color: "#0f172a",
-  fontWeight: 600,
-  fontSize: "14px",
-};
+const inputFieldClass =
+  "h-11 min-h-[44px] w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-[15px] text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+
+const labelClass =
+  "mb-1.5 block text-sm font-semibold text-slate-800";
 
 export default function ProfileClientPage({
   session,
@@ -75,12 +55,12 @@ export default function ProfileClientPage({
   const [emailVerified, setEmailVerified] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const [submittingProfile, setSubmittingProfile] = useState(false);
+  const [submittingPassword, setSubmittingPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [form, setForm] = useState({
+  const [profileForm, setProfileForm] = useState({
     username: "",
     firstName: "",
     lastName: "",
@@ -93,17 +73,31 @@ export default function ProfileClientPage({
     newPassword: "",
   });
 
+  const displayUsername = resolvePublicUsername({
+    username: profileForm.username || session.username,
+    email: profileForm.email || session.email,
+    fallback: "—",
+  });
+
+  const initials = (
+    displayUsername && displayUsername !== "—"
+      ? displayUsername
+      : session.email || "?"
+  )
+    .charAt(0)
+    .toUpperCase();
+
   useEffect(() => {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        setError("");
+        setErrorMessage("");
         const user = await getUserByEmail(session.email);
         setUserId(user.id);
         setRole(user.role);
         setEmailVerified(Boolean(user.emailVerified));
         setMfaEnabled(Boolean(user.mfaEnabled));
-        setForm({
+        setProfileForm({
           username: resolvePublicUsername({
             username: user.username,
             email: user.email,
@@ -115,11 +109,7 @@ export default function ProfileClientPage({
           email: user.email,
         });
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Impossible de charger le profil."
-        );
+        setErrorMessage(err instanceof Error ? err.message : "Impossible de charger le profil.");
       } finally {
         setLoading(false);
       }
@@ -128,472 +118,348 @@ export default function ProfileClientPage({
     loadProfile();
   }, [session.email]);
 
-  const handleChange = (
-    key: "firstName" | "lastName" | "dateOfBirth" | "email",
+  const handleProfileFieldChange = (
+    key: keyof Pick<typeof profileForm, "firstName" | "lastName" | "dateOfBirth" | "email">,
     value: string
   ) => {
-    setForm((prev) => ({
+    setProfileForm((prev) => ({
       ...prev,
       [key]: value,
     }));
-    setSuccess("");
-    setError("");
+    setSuccessMessage("");
+    setErrorMessage("");
   };
 
-  const handlePasswordChange = (
-    key: "oldPassword" | "newPassword",
-    value: string
-  ) => {
+  const handlePasswordFieldChange = (key: "oldPassword" | "newPassword", value: string) => {
     setPasswordForm((prev) => ({
       ...prev,
       [key]: value,
     }));
-    setSuccess("");
-    setError("");
+    setSuccessMessage("");
+    setErrorMessage("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setError("");
-    setSuccess("");
+    setErrorMessage("");
+    setSuccessMessage("");
 
-    if (!form.email.trim()) {
-      setError("L'email est obligatoire.");
+    if (!profileForm.email.trim()) {
+      setErrorMessage("L'adresse e-mail est obligatoire.");
       return;
     }
 
     if (!userId) {
-      setError("ID utilisateur introuvable.");
+      setErrorMessage("Identifiant utilisateur introuvable.");
       return;
     }
 
     try {
-      setSubmitting(true);
+      setSubmittingProfile(true);
 
       const updated = await updateUserProfile(userId, {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim(),
-        dateOfBirth: form.dateOfBirth ? form.dateOfBirth : null,
+        firstName: profileForm.firstName.trim(),
+        lastName: profileForm.lastName.trim(),
+        email: profileForm.email.trim(),
+        dateOfBirth: profileForm.dateOfBirth ? profileForm.dateOfBirth : null,
       });
 
       setUserId(updated.id);
       setRole(updated.role);
       setEmailVerified(Boolean(updated.emailVerified));
       setMfaEnabled(Boolean(updated.mfaEnabled));
-      setForm({
-        username: updated.username || form.username,
+      setProfileForm({
+        username: updated.username || profileForm.username,
         firstName: updated.firstName || "",
         lastName: updated.lastName || "",
         dateOfBirth: normalizeDateOfBirthInput(updated.dateOfBirth),
         email: updated.email,
       });
 
-      setSuccess("Profil mis à jour avec succès.");
+      setSuccessMessage("Informations personnelles enregistrées avec succès.");
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Impossible de mettre à jour le profil."
+      setErrorMessage(
+        err instanceof Error ? err.message : "Impossible de mettre à jour le profil."
       );
     } finally {
-      setSubmitting(false);
+      setSubmittingProfile(false);
     }
   };
 
   const handleSubmitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setError("");
-    setSuccess("");
+    setErrorMessage("");
+    setSuccessMessage("");
 
     if (!userId) {
-      setError("ID utilisateur introuvable.");
+      setErrorMessage("Identifiant utilisateur introuvable.");
       return;
     }
 
     if (!passwordForm.oldPassword.trim() || !passwordForm.newPassword.trim()) {
-      setError("Ancien et nouveau mot de passe sont obligatoires.");
+      setErrorMessage("L'ancien et le nouveau mot de passe sont obligatoires.");
       return;
     }
 
     try {
-      setChangingPassword(true);
+      setSubmittingPassword(true);
       await changeUserPassword(userId, {
         oldPassword: passwordForm.oldPassword,
         newPassword: passwordForm.newPassword,
       });
-      setSuccess("Mot de passe mis à jour avec succès.");
+      setSuccessMessage("Mot de passe mis à jour avec succès.");
       setPasswordForm({ oldPassword: "", newPassword: "" });
+      router.refresh();
     } catch (err) {
-      setError(
+      setErrorMessage(
         err instanceof Error ? err.message : "Impossible de changer le mot de passe."
       );
     } finally {
-      setChangingPassword(false);
+      setSubmittingPassword(false);
     }
   };
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
-      <div>
-        <h1 style={{ margin: "0 0 4px", color: "#0f172a" }}>Mon profil</h1>
-        <p style={{ margin: 0, color: "#64748b" }}>
-          Consulte et modifie tes informations personnelles.
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-8">
+      <header className="lg:col-span-12">
+        <h1 className={PAGE_TITLE_CLASS}>Mon profil</h1>
+        <p className={`${PAGE_DESCRIPTION_CLASS} mt-2`}>
+          Consultez et mettez à jour vos données personnelles et votre sécurité.
         </p>
-      </div>
+      </header>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "0.9fr 1.1fr",
-          gap: "24px",
-        }}
-        className="profile-grid"
-      >
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-          }}
+      {/* Summary column — avatar, pseudo, rôle, statuts sécurité (no duplicate identity fields) */}
+      <aside className="order-2 flex flex-col gap-6 lg:order-none lg:col-span-4">
+        <section
+          className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6 lg:sticky lg:top-6"
+          aria-label="Résumé du compte"
         >
+          <div className="flex flex-col items-center gap-5 text-center">
+            <div
+              className="flex h-[7.5rem] w-[7.5rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 text-[2.125rem] font-bold text-emerald-800 shadow-inner ring-[3px] ring-emerald-200/90 sm:h-32 sm:w-32 sm:text-[2.25rem]"
+              aria-hidden="true"
+            >
+              {initials}
+            </div>
+
+            <div className="min-w-0">
+              <h2 className="m-0 break-words text-xl font-bold text-slate-900 md:text-2xl">{displayUsername}</h2>
+              <span
+                className="mt-4 inline-flex items-center rounded-full bg-emerald-50 px-3 py-2 text-[13px] font-semibold text-emerald-800 ring-1 ring-emerald-200/80"
+                title={ROLE_LABEL_FR[role]}
+              >
+                {ROLE_LABEL_FR[role]}
+              </span>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 border-t border-slate-100 pt-5">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Compte</p>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start lg:justify-center">
+                <span
+                  className={
+                    emailVerified
+                      ? "rounded-full bg-emerald-600/95 px-3 py-2 text-[12px] font-semibold text-white"
+                      : "rounded-full bg-amber-100 px-3 py-2 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-200"
+                  }
+                >
+                  Email vérifié : {emailVerified ? "Oui" : "Non"}
+                </span>
+                <span
+                  className={
+                    mfaEnabled
+                      ? "rounded-full bg-emerald-600/95 px-3 py-2 text-[12px] font-semibold text-white"
+                      : "rounded-full bg-slate-100 px-3 py-2 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200"
+                  }
+                >
+                  MFA : {mfaEnabled ? "Activée" : "Désactivée"}
+                </span>
+              </div>
+            </div>
+
+            {loading ? (
+              <p className="m-0 w-full animate-pulse text-sm text-slate-500">Chargement du profil…</p>
+            ) : null}
+          </div>
+        </section>
+      </aside>
+
+      {/* Forms column */}
+      <div className="order-3 flex flex-col gap-6 lg:order-none lg:col-span-8">
+        {errorMessage ? (
           <div
-            style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "50%",
-              background: "#e0f2fe",
-              color: "#0ea5e9",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "24px",
-              fontWeight: 700,
-              marginBottom: "16px",
-            }}
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 sm:p-4"
+            role="alert"
           >
-            {resolvePublicUsername({
-              username: form.username || session.username,
-              email: form.email || session.email,
-              fallback: "U",
-            })
-              .charAt(0)
-              .toUpperCase()}
+            {errorMessage}
           </div>
+        ) : null}
 
-          <h2 style={{ margin: "0 0 6px", color: "#0f172a" }}>
-            {resolvePublicUsername({
-              username: form.username || session.username,
-              email: form.email || session.email,
-            })}
-          </h2>
-          <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "14px" }}>
-            {`${form.firstName} ${form.lastName}`.trim() || "—"}
-          </p>
-
-          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "14px" }}>
-            <strong style={{ color: "#0f172a" }}>Date de naissance :</strong>{" "}
-            {form.dateOfBirth
-              ? formatFrenchLocalDate(form.dateOfBirth)
-              : "—"}
-          </p>
-
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "5px",
-              background: "#f1f5f9",
-              color: "#475569",
-              fontSize: "12px",
-              fontWeight: 600,
-              padding: "4px 10px",
-              borderRadius: "999px",
-            }}
+        {successMessage ? (
+          <div
+            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 sm:p-4"
+            role="status"
           >
-            <span
-              style={{
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                background: "#94a3b8",
-              }}
-            />
-            {role}
-          </span>
-
-          <div style={{ marginTop: "20px", display: "grid", gap: "12px" }}>
-            <div
-              style={{
-                background: "#f8fafc",
-                borderRadius: "12px",
-                padding: "14px",
-              }}
-            >
-              <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
-                Nom légal
-              </p>
-              <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>
-                {`${form.firstName} ${form.lastName}`.trim() || "—"}
-              </p>
-            </div>
-
-            <div
-              style={{
-                background: "#f8fafc",
-                borderRadius: "12px",
-                padding: "14px",
-              }}
-            >
-              <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
-                Compte
-              </p>
-              <p style={{ margin: "0 0 6px", color: "#0f172a", fontWeight: 600 }}>
-                Adresse mail :{" "}
-                <span style={{ fontWeight: 500 }}>{form.email || session.email}</span>
-              </p>
-            </div>
-
-            <div
-              style={{
-                background: "#f8fafc",
-                borderRadius: "12px",
-                padding: "14px",
-              }}
-            >
-              <p style={{ margin: "0 0 4px", color: "#94a3b8", fontSize: "12px" }}>
-                Sécurité du compte
-              </p>
-              <p style={{ margin: "0 0 6px", color: "#0f172a", fontWeight: 600 }}>
-                Email vérifié :{" "}
-                <span style={{ color: emailVerified ? "#16a34a" : "#ca8a04" }}>
-                  {emailVerified ? "Oui" : "Non"}
-                </span>
-              </p>
-              <p style={{ margin: 0, color: "#0f172a", fontWeight: 600 }}>
-                MFA :{" "}
-                <span style={{ color: mfaEnabled ? "#16a34a" : "#64748b" }}>
-                  {mfaEnabled ? "Activée" : "Désactivée"}
-                </span>
-              </p>
-            </div>
+            {successMessage}
           </div>
-        </div>
+        ) : null}
 
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-            borderTop: "3px solid #0ea5e9",
-          }}
-        >
-          <h2 style={{ margin: "0 0 4px", color: "#0f172a" }}>
-            Modifier mes informations
-          </h2>
-          <p style={{ margin: "0 0 20px", color: "#64748b" }}>
-            Mets à jour ton prénom, ton nom, ta date de naissance ou ton email.
+        <section className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+          <h3 className="m-0 text-lg font-semibold text-slate-900 md:text-xl">Informations personnelles</h3>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+            Mettez à jour votre nom, votre e-mail et votre date de naissance.
           </p>
 
           {loading ? (
-            <p style={{ margin: 0, color: "#64748b" }}>Chargement du profil...</p>
+            <p className="mt-6 text-sm text-slate-500">Chargement…</p>
           ) : (
-            <div style={{ display: "grid", gap: "22px" }}>
-              <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
-                <div>
-                  <label style={labelStyle}>Pseudo</label>
-                  <input
-                    type="text"
-                    value={form.username}
-                    readOnly
-                    disabled
-                    style={{
-                      ...inputStyle,
-                      background: "#f8fafc",
-                      color: "#64748b",
-                      cursor: "not-allowed",
-                    }}
-                    aria-readonly="true"
-                  />
-                  <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" }}>
-                    Le pseudo ne peut pas être modifié après la création du compte. Veuillez
-                    contacter le support en cas de besoin.
-                  </p>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }} className="name-grid">
-                  <div>
-                    <label style={labelStyle}>Prénom</label>
-                    <input
-                      type="text"
-                      value={form.firstName}
-                      onChange={(e) => handleChange("firstName", e.target.value)}
-                      style={inputStyle}
-                      placeholder="Ex. Marie"
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Nom</label>
-                    <input
-                      type="text"
-                      value={form.lastName}
-                      onChange={(e) => handleChange("lastName", e.target.value)}
-                      style={inputStyle}
-                      placeholder="Ex. Dupont"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Email</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    style={inputStyle}
-                    placeholder="Ex. marie@ecotrack.com"
-                  />
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Date de naissance</label>
-                  <input
-                    type="date"
-                    value={form.dateOfBirth}
-                    onChange={(e) => handleChange("dateOfBirth", e.target.value)}
-                    style={inputStyle}
-                  />
-                  <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" }}>
-                    Format attendu par l&apos;API : <strong>YYYY-MM-DD</strong>.
-                  </p>
-                </div>
-
-                {error ? (
-                  <div
-                    style={{
-                      background: "#fee2e2",
-                      color: "#dc2626",
-                      borderRadius: "12px",
-                      padding: "12px 14px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {error}
-                  </div>
-                ) : null}
-
-                {success ? (
-                  <div
-                    style={{
-                      background: "#dcfce7",
-                      color: "#16a34a",
-                      borderRadius: "12px",
-                      padding: "12px 14px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {success}
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  style={{
-                    background: "#0ea5e9",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "12px 18px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    opacity: submitting ? 0.7 : 1,
-                  }}
-                >
-                  {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
-                </button>
-              </form>
-
-              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "18px" }}>
-                <h3 style={{ margin: "0 0 6px", color: "#0f172a" }}>
-                  Changer mon mot de passe
-                </h3>
-                <p style={{ margin: "0 0 16px", color: "#64748b" }}>
-                  Saisis ton ancien mot de passe puis le nouveau (8+ chars avec
-                  maj/min/chiffre/spécial).
+            <form onSubmit={handleSubmitProfile} className="mt-6 flex flex-col gap-5 md:gap-6">
+              <div>
+                <label htmlFor="profile-username" className={labelClass}>
+                  Pseudo
+                </label>
+                <input
+                  id="profile-username"
+                  type="text"
+                  value={profileForm.username}
+                  readOnly
+                  disabled
+                  className={`${inputFieldClass} bg-slate-50 text-slate-600`}
+                  aria-readonly="true"
+                />
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  Le pseudo ne peut pas être modifié après la création du compte. Contactez le support si
+                  besoin.
                 </p>
-
-                <form
-                  onSubmit={handleSubmitPassword}
-                  style={{ display: "grid", gap: "14px" }}
-                >
-                  <div>
-                    <label style={labelStyle}>Ancien mot de passe</label>
-                    <input
-                      type="password"
-                      value={passwordForm.oldPassword}
-                      onChange={(e) =>
-                        handlePasswordChange("oldPassword", e.target.value)
-                      }
-                      style={inputStyle}
-                      placeholder="Ancien mot de passe"
-                    />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Nouveau mot de passe</label>
-                    <input
-                      type="password"
-                      value={passwordForm.newPassword}
-                      onChange={(e) =>
-                        handlePasswordChange("newPassword", e.target.value)
-                      }
-                      style={inputStyle}
-                      placeholder="Nouveau mot de passe"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={changingPassword}
-                    style={{
-                      background: "#0f172a",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "10px",
-                      padding: "12px 18px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      opacity: changingPassword ? 0.7 : 1,
-                    }}
-                  >
-                    {changingPassword ? "Mise à jour..." : "Mettre à jour le mot de passe"}
-                  </button>
-                </form>
               </div>
-            </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
+                <div>
+                  <label htmlFor="profile-first-name" className={labelClass}>
+                    Prénom
+                  </label>
+                  <input
+                    id="profile-first-name"
+                    type="text"
+                    autoComplete="given-name"
+                    value={profileForm.firstName}
+                    onChange={(e) => handleProfileFieldChange("firstName", e.target.value)}
+                    className={inputFieldClass}
+                    placeholder="Ex. Marie"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="profile-last-name" className={labelClass}>
+                    Nom
+                  </label>
+                  <input
+                    id="profile-last-name"
+                    type="text"
+                    autoComplete="family-name"
+                    value={profileForm.lastName}
+                    onChange={(e) => handleProfileFieldChange("lastName", e.target.value)}
+                    className={inputFieldClass}
+                    placeholder="Ex. Dupont"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="profile-email" className={labelClass}>
+                  E-mail
+                </label>
+                <input
+                  id="profile-email"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  value={profileForm.email}
+                  onChange={(e) => handleProfileFieldChange("email", e.target.value)}
+                  className={inputFieldClass}
+                  placeholder="exemple@domaine.fr"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="profile-dob" className={labelClass}>
+                  Date de naissance
+                </label>
+                <input
+                  id="profile-dob"
+                  type="date"
+                  value={profileForm.dateOfBirth}
+                  onChange={(e) => handleProfileFieldChange("dateOfBirth", e.target.value)}
+                  className={inputFieldClass}
+                  lang="fr-FR"
+                />
+                <p className="mt-2 text-xs text-slate-500">Choisissez une date avec le sélecteur.</p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submittingProfile}
+                className="h-11 min-h-[44px] w-full rounded-lg bg-emerald-600 px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[12rem]"
+              >
+                {submittingProfile ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            </form>
           )}
-        </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+          <h3 className="m-0 text-lg font-semibold text-slate-900 md:text-xl">Sécurité &amp; mot de passe</h3>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+            Ancien mot de passe obligatoire. Le nouveau mot de passe doit comporter au moins 8 caractères avec
+            majuscule, minuscule, chiffre et caractère spécial.
+          </p>
+
+          {loading ? (
+            <p className="mt-6 text-sm text-slate-500">Chargement…</p>
+          ) : (
+            <form onSubmit={handleSubmitPassword} className="mt-6 flex flex-col gap-5">
+              <div>
+                <label htmlFor="password-old" className={labelClass}>
+                  Ancien mot de passe
+                </label>
+                <input
+                  id="password-old"
+                  type="password"
+                  autoComplete="current-password"
+                  value={passwordForm.oldPassword}
+                  onChange={(e) => handlePasswordFieldChange("oldPassword", e.target.value)}
+                  className={inputFieldClass}
+                  placeholder="Mot de passe actuel"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password-new" className={labelClass}>
+                  Nouveau mot de passe
+                </label>
+                <input
+                  id="password-new"
+                  type="password"
+                  autoComplete="new-password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => handlePasswordFieldChange("newPassword", e.target.value)}
+                  className={inputFieldClass}
+                  placeholder="Saisissez le nouveau mot de passe"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submittingPassword}
+                className="h-11 min-h-[44px] w-full rounded-lg border-2 border-emerald-700 bg-white px-4 py-3 text-[15px] font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[12rem]"
+              >
+                {submittingPassword ? "Mise à jour…" : "Mettre à jour le mot de passe"}
+              </button>
+            </form>
+          )}
+        </section>
       </div>
-
-      <style>{`
-        .profile-grid { grid-template-columns: 0.9fr 1.1fr; }
-        .name-grid { grid-template-columns: 1fr 1fr; }
-
-        @media (max-width: 991px) {
-          .profile-grid { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 767px) {
-          .name-grid { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </div>
   );
 }

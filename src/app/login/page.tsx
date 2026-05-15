@@ -1,67 +1,26 @@
 import Link from "next/link";
 import LoginForm from "@/components/auth/LoginForm";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 export default function LoginPage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#f8fafc",
-        padding: "24px",
-      }}
-    >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: "420px",
-          backgroundColor: "#ffffff",
-          padding: "32px",
-          borderRadius: "16px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "2rem",
-            marginBottom: "12px",
-            color: "#0f172a",
-            textAlign: "center",
-          }}
-        >
-          Connexion
-        </h1>
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
+      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
+        <h1 className={`${PAGE_TITLE_CLASS} text-center`}>Connexion</h1>
 
-        <p
-          style={{
-            marginBottom: "24px",
-            color: "#475569",
-            textAlign: "center",
-          }}
-        >
-          Connecte-toi pour accéder à la page users.
+        <p className={`${PAGE_DESCRIPTION_CLASS} mt-2 text-center`}>
+          Connectez-vous pour accéder à votre espace EcoTrack.
         </p>
 
-        <LoginForm />
+        <div className="mt-6">
+          <LoginForm />
+        </div>
 
-        <div style={{ marginTop: "20px", textAlign: "center" }}>
-          <p style={{ color: "#64748b", marginBottom: "12px" }}>
-            Pas encore de compte ?
-          </p>
-
+        <div className="mt-6 border-t border-slate-100 pt-6 text-center">
+          <p className="m-0 text-sm text-slate-600">Pas encore de compte ?</p>
           <Link
             href="/register"
-            style={{
-              display: "inline-block",
-              padding: "12px 20px",
-              backgroundColor: "#16a34a",
-              color: "#ffffff",
-              textDecoration: "none",
-              borderRadius: "10px",
-              fontWeight: 600,
-            }}
+            className="mt-3 inline-block rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
           >
             Inscription
           </Link>

@@ -18,9 +18,9 @@ export default function MyBadgesPanel({
 
   return (
     <section aria-label="Mes badges">
-      <GamificationCard className="p-8">
+      <GamificationCard className="p-4 sm:p-6 lg:p-8">
         <h3 className="m-0 text-lg font-bold text-slate-900">Mes badges</h3>
-        <p className="mt-1.5 mb-6 text-sm text-slate-500">
+        <p className="mt-1.5 mb-4 text-sm text-slate-500 sm:mb-6">
           Badges déjà débloqués sur ton profil EcoTrack.
         </p>
 
@@ -30,16 +30,16 @@ export default function MyBadgesPanel({
             premier badge !
           </p>
         ) : (
-          <div className="flex w-full flex-wrap justify-start gap-4">
+          <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 sm:gap-4">
             {ownedBadges.map((badge, index) => (
               <BadgeTooltip
                 key={badge.id}
                 description={badge.description}
-                className="gamification-fade-in group w-[120px] rounded-xl border border-green-100 bg-green-50/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:border-green-200 hover:bg-green-50 hover:shadow-md"
+                className="gamification-fade-in group flex aspect-square w-full min-h-0 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-green-100 bg-green-50/50 p-2.5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-green-200 hover:bg-green-50 hover:shadow-md sm:p-3"
                 style={{ animationDelay: `${index * 40}ms` }}
               >
-                <article className="m-0 flex flex-col items-center">
-                  <div className="relative mx-auto mb-3 flex h-14 w-14 items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                <article className="m-0 flex min-h-0 w-full flex-col items-center justify-center gap-1 text-center">
+                  <div className="relative flex size-12 shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-110 sm:size-14">
                     <Image
                       src={resolveBadgeIconSrc(badge.iconUrl)}
                       alt={badge.name}
@@ -48,7 +48,7 @@ export default function MyBadgesPanel({
                       className="object-contain"
                     />
                   </div>
-                  <p className="m-0 text-xs font-semibold leading-snug text-slate-800">
+                  <p className="m-0 line-clamp-2 text-xs font-semibold leading-tight text-slate-800">
                     {badge.name}
                   </p>
                 </article>

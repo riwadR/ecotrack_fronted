@@ -7,6 +7,7 @@ import {
   isValidUsername,
   USERNAME_VALIDATION_MESSAGE,
 } from "@/lib/validation/username";
+import { APP_FORM_CONTROL_CLASS, APP_FORM_LABEL_CLASS } from "@/lib/ui/appChrome";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -59,7 +60,9 @@ export default function RegisterForm() {
         return;
       }
 
-      setSuccess("Inscription réussie. Redirection vers la page de connexion...");
+      setSuccess(
+        "Inscription réussie. Redirection vers la page de connexion..."
+      );
       setTimeout(() => {
         router.push("/login");
       }, 1200);
@@ -70,21 +73,18 @@ export default function RegisterForm() {
     }
   }
 
+  const controlClass = APP_FORM_CONTROL_CLASS;
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-    >
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <div>
-        <label
-          htmlFor="username"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="username">
           Pseudo
         </label>
         <input
           id="username"
           type="text"
+          className={controlClass}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="EcoWarrior99"
@@ -93,169 +93,113 @@ export default function RegisterForm() {
           maxLength={15}
           pattern="[a-zA-Z0-9_.-]+"
           autoComplete="username"
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
-        <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" }}>
-          5 à 15 caractères : lettres, chiffres, tirets, underscores ou points (sans espace).
+        <p className="m-0 mt-1.5 text-xs text-slate-400">
+          5 à 15 caractères : lettres, chiffres, tirets, underscores ou points
+          (sans espace).
         </p>
       </div>
 
       <div>
-        <label
-          htmlFor="firstName"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="firstName">
           Prénom
         </label>
         <input
           id="firstName"
           type="text"
+          className={controlClass}
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          placeholder="John"
+          placeholder="Jean"
           required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
       </div>
 
       <div>
-        <label
-          htmlFor="lastName"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="lastName">
           Nom
         </label>
         <input
           id="lastName"
           type="text"
+          className={controlClass}
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          placeholder="Doe"
+          placeholder="Dupont"
           required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
       </div>
 
       <div>
-        <label
-          htmlFor="dateOfBirth"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="dateOfBirth">
           Date de naissance
         </label>
         <input
           id="dateOfBirth"
           type="date"
+          className={controlClass}
           value={dateOfBirth}
           onChange={(e) => setDateOfBirth(e.target.value)}
           required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
       </div>
 
       <div>
-        <label
-          htmlFor="email"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="email">
           Email
         </label>
         <input
           id="email"
           type="email"
+          className={controlClass}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="john.doe@test.com"
+          placeholder="vous@exemple.fr"
           required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
       </div>
 
       <div>
-        <label
-          htmlFor="password"
-          style={{ display: "block", marginBottom: "8px", color: "#0f172a" }}
-        >
+        <label className={APP_FORM_LABEL_CLASS} htmlFor="password">
           Mot de passe
         </label>
         <input
           id="password"
           type="password"
+          className={controlClass}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Min. 8 caractères + maj/min/chiffre/spécial"
           required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            outline: "none",
-          }}
         />
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        style={{
-          padding: "12px",
-          backgroundColor: isLoading ? "#94a3b8" : "#16a34a",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "10px",
-          fontWeight: 600,
-          cursor: isLoading ? "not-allowed" : "pointer",
-        }}
+        className="rounded-lg bg-emerald-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
       >
         {isLoading ? "Inscription..." : "Créer un compte"}
       </button>
 
       {error && (
-        <p style={{ color: "#dc2626", margin: 0, textAlign: "center" }}>
+        <p className="m-0 text-center text-sm font-medium text-red-600">
           {error}
         </p>
       )}
 
       {success && (
-        <p style={{ color: "#16a34a", margin: 0, textAlign: "center" }}>
+        <p className="m-0 text-center text-sm font-medium text-emerald-700">
           {success}
         </p>
       )}
 
-      <p style={{ textAlign: "center", color: "#64748b", margin: 0 }}>
+      <p className="m-0 text-center text-sm text-slate-600">
         Déjà un compte ?{" "}
-        <Link href="/login" style={{ color: "#2563eb", textDecoration: "none" }}>
+        <Link
+          href="/login"
+          className="font-semibold text-emerald-600 no-underline hover:text-emerald-700"
+        >
           Se connecter
         </Link>
       </p>

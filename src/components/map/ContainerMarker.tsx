@@ -8,6 +8,7 @@ import type { Role } from "@/models/user";
 import { getContainerTypeLabel } from "@/lib/containers/containerTypeLabels";
 import { formatSensorTimestampFr } from "@/lib/datetime/sensorTimestamp";
 import { getFillLevelCategory } from "@/lib/map/fillLevelCategory";
+import { useBelowLgViewport } from "@/hooks/useBelowLgViewport";
 import { canShowCreateRouteAction } from "@/lib/map/mapActionPermissions";
 
 const FILL_COLOR_BY_CATEGORY = {
@@ -68,6 +69,7 @@ export default function ContainerMarker({
   onCreateRoute,
   onContainerSelect,
 }: ContainerMarkerProps) {
+  const belowLg = useBelowLgViewport();
   const icon = useMemo(
     () => buildMarkerIcon(container.fillLevelPercent, isSelected),
     [container.fillLevelPercent, isSelected]
@@ -94,8 +96,8 @@ export default function ContainerMarker({
         popupopen: () => onContainerSelect?.(container),
       }}
     >
-      <Popup>
-        <div className="flex min-w-[220px] flex-col gap-2 p-1 text-slate-800">
+      <Popup maxWidth={belowLg ? 280 : 400}>
+        <div className="flex min-w-0 max-w-full flex-col gap-1.5 px-0.5 py-0.5 text-slate-800 sm:gap-2 sm:px-1 sm:py-1">
           <div>
             <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Conteneur</p>
             <p className="m-0 font-mono text-sm font-bold text-slate-900">{displaySerial}</p>
@@ -125,11 +127,11 @@ export default function ContainerMarker({
             </span>
           </div>
           {(showReport || showRoute) && (
-            <div className="mt-1 flex flex-wrap gap-2 border-t border-slate-200 pt-2">
+            <div className="mt-1 flex flex-col gap-2 border-t border-slate-200 pt-2 sm:flex-row sm:flex-wrap">
               {showReport && (
                 <button
                   type="button"
-                  className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                  className="min-h-[44px] w-full shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto sm:min-h-0 sm:rounded-md sm:py-2 sm:text-xs"
                   onClick={() => onReportIssue?.(container.id)}
                 >
                   Signaler un problème
@@ -138,7 +140,7 @@ export default function ContainerMarker({
               {showRoute && (
                 <button
                   type="button"
-                  className="rounded-md border border-sky-600 bg-white px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-50"
+                  className="min-h-[44px] w-full shrink-0 rounded-lg border border-sky-600 bg-white px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50 sm:w-auto sm:min-h-0 sm:rounded-md sm:py-2 sm:text-xs"
                   onClick={() => onCreateRoute?.(container.id)}
                 >
                   Créer une tournée

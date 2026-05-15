@@ -1,49 +1,19 @@
 import RegisterForm from "@/components/auth/RegisterForm";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 export default function RegisterPage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#f8fafc",
-        padding: "24px",
-      }}
-    >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: "500px",
-          backgroundColor: "#ffffff",
-          padding: "32px",
-          borderRadius: "16px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "2rem",
-            marginBottom: "12px",
-            color: "#0f172a",
-            textAlign: "center",
-          }}
-        >
-          Inscription
-        </h1>
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
+      <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
+        <h1 className={`${PAGE_TITLE_CLASS} text-center`}>Inscription</h1>
 
-        <p
-          style={{
-            marginBottom: "24px",
-            color: "#475569",
-            textAlign: "center",
-          }}
-        >
-          Crée un compte utilisateur simple pour EcoTrack.
+        <p className={`${PAGE_DESCRIPTION_CLASS} mt-2 text-center`}>
+          Créez votre compte pour participer aux défis et suivre vos signalements sur EcoTrack.
         </p>
 
-        <RegisterForm />
+        <div className="mt-6">
+          <RegisterForm />
+        </div>
       </section>
     </main>
   );

@@ -1,50 +1,29 @@
 import Link from "next/link";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 export default function HomePage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#f8fafc",
-        padding: "24px",
-      }}
-    >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: "700px",
-          backgroundColor: "#ffffff",
-          padding: "32px",
-          borderRadius: "16px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ fontSize: "2rem", marginBottom: "16px", color: "#0f172a" }}>
-          Bienvenue sur EcoTrack
-        </h1>
-
-        <p style={{ fontSize: "1rem", marginBottom: "24px", color: "#475569" }}>
-          Ton frontend Next.js fonctionne. Tu peux maintenant accéder à la page des utilisateurs.
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+      <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg shadow-slate-200/60 sm:p-10">
+        <h1 className={PAGE_TITLE_CLASS}>Bienvenue sur EcoTrack</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
+          Suivez le remplissage des conteneurs, les collectes et les alertes sur
+          une seule plateforme.
         </p>
-
-        <Link
-          href="/users"
-          style={{
-            display: "inline-block",
-            padding: "12px 20px",
-            backgroundColor: "#2563eb",
-            color: "#ffffff",
-            textDecoration: "none",
-            borderRadius: "10px",
-            fontWeight: 600,
-          }}
-        >
-          Aller vers /users
-        </Link>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+          >
+            Se connecter
+          </Link>
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
+          >
+            Créer un compte
+          </Link>
+        </div>
       </section>
     </main>
   );

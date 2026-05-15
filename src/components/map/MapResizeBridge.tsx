@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 
 /**
- * Keeps the Leaflet map in sync when its container is resized (flex layouts, dynamic panels).
+ * Subscribes Leaflet to container `ResizeObserver` events.
+ * Pairs well with `dvh`-based shells in `mapShellLayout` after mobile browser chrome shifts the viewport.
  */
 export default function MapResizeBridge() {
   const map = useMap();

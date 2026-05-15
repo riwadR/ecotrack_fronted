@@ -32,33 +32,35 @@ export default function BadgeCard({
     <BadgeTooltip
       description={badge.description}
       className={[
-        "gamification-fade-in group flex h-full w-[150px] flex-col items-center rounded-2xl border bg-white p-5 text-center shadow-sm",
+        "gamification-fade-in group flex aspect-square w-full min-h-0 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border bg-white px-2.5 py-2.5 text-center shadow-sm sm:px-3 sm:py-3",
         "transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
         borderClass,
         isEarned ? "opacity-100" : "opacity-60 grayscale hover:grayscale-[0.35]",
       ].join(" ")}
       style={{ animationDelay: `${animationDelayMs}ms` }}
     >
-      <article className="m-0 flex h-full w-full flex-col items-center">
-        <div className="relative mb-4 flex h-16 w-16 items-center justify-center transition-transform duration-300 group-hover:scale-110">
+      <article className="m-0 flex min-h-0 w-full flex-col items-center justify-center gap-1 text-center">
+        <div className="relative flex size-12 shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-110 sm:size-14">
           <Image
             src={resolveBadgeIconSrc(badge.iconUrl)}
             alt={badge.name}
-            width={64}
-            height={64}
+            width={56}
+            height={56}
             className="object-contain"
           />
         </div>
 
-        <h4 className="m-0 text-sm font-semibold text-slate-800">{badge.name}</h4>
+        <h4 className="m-0 line-clamp-2 text-xs font-semibold leading-tight text-slate-800 sm:text-sm">
+          {badge.name}
+        </h4>
 
-        <p className="mt-1.5 mb-0 text-xs text-slate-400">
+        <p className="m-0 text-[11px] leading-tight text-slate-400 sm:text-xs">
           {badge.requiredPoints} points
         </p>
 
         <span
           className={[
-            "mt-auto pt-3 text-xs font-bold",
+            "m-0 line-clamp-2 text-center text-[10px] font-bold leading-tight sm:text-xs",
             isEarned ? "text-green-700" : isNextTarget ? "text-green-600" : "text-slate-400",
           ].join(" ")}
         >

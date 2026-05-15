@@ -4,11 +4,19 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
 
-export default function LogoutButton() {
+export type LogoutButtonProps = {
+  /** Styled for sidebar vs mobile drawer footer (same touch target minimum). */
+  variant?: "desktop" | "mobile-drawer";
+  /** Runs before logout request (e.g. close drawer for cleaner UX). */
+  onLogoutStart?: () => void;
+};
+
+export default function LogoutButton({ variant = "desktop", onLogoutStart }: LogoutButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleLogout() {
+    onLogoutStart?.();
     setIsLoading(true);
     try {
       await apiClient.post("/api/logout");
@@ -19,25 +27,17 @@ export default function LogoutButton() {
     }
   }
 
+  const base =
+    "w-full min-h-[44px] rounded-lg border px-3 py-3 text-left text-sm font-semibold transition disabled:opacity-60";
+
+  const styles =
+    variant === "mobile-drawer"
+      ? "border-red-900/70 bg-transparent text-red-400 hover:bg-slate-800 hover:text-red-300"
+      : "border-slate-800 bg-transparent text-red-400 hover:border-slate-700 hover:bg-slate-950/60";
+
   return (
-    <button
-      onClick={handleLogout}
-      disabled={isLoading}
-      style={{
-        width: "100%",
-        padding: "10px 12px",
-        backgroundColor: "transparent",
-        color: isLoading ? "#64748b" : "#f87171",
-        border: "1px solid #1e293b",
-        borderRadius: "8px",
-        fontSize: "14px",
-        fontWeight: 500,
-        cursor: isLoading ? "not-allowed" : "pointer",
-        textAlign: "left",
-        transition: "all 0.15s",
-      }}
-    >
-      {isLoading ? "Déconnexion..." : "🚪 Se déconnecter"}
+    <button type="button" onClick={() => void handleLogout()} disabled={isLoading} className={`${base} ${styles}`}>
+      {isLoading ? "Déconnexion…" : "🚪 Se déconnecter"}
     </button>
   );
 }

@@ -12,6 +12,7 @@ import {
   MyBadgesSkeleton,
 } from "@/components/gamification/GamificationSkeletons";
 import { useGamificationData } from "@/hooks/useGamificationData";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 export default function GamificationDashboard() {
   const {
@@ -29,12 +30,8 @@ export default function GamificationDashboard() {
       <GamificationMotionStyles />
 
       <header>
-        <h1 className="m-0 mb-1 text-3xl font-extrabold tracking-tight text-slate-900">
-          Gamification
-        </h1>
-        <p className="m-0 text-slate-500">
-          Suis ton impact écologique et tes badges.
-        </p>
+        <h1 className={PAGE_TITLE_CLASS}>Gamification</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>Suis ton impact écologique et tes badges.</p>
       </header>
 
       {profileError ? (

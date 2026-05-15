@@ -8,6 +8,16 @@ import {
   REPORT_TYPE_FORM_OPTIONS,
   reportTypeRequiresComment,
 } from "@/lib/reports/reportTypeLabels";
+import {
+  APP_FORM_CONTROL_CLASS,
+  APP_MODAL_BODY_CLASS,
+  APP_MODAL_FOOTER_CLASS,
+  APP_MODAL_HEADER_CLASS,
+  APP_MODAL_PANEL_CLASS,
+  APP_MODAL_SUBTITLE_CLASS,
+  APP_MODAL_TITLE_CLASS,
+  appModalBackdrop,
+} from "@/lib/ui/appChrome";
 
 const PHOTO_UPLOAD_DELAY_MS = 1400;
 
@@ -73,17 +83,17 @@ export default function ReportFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-[1050] flex items-center justify-center bg-slate-900/50 p-4"
+      className={appModalBackdrop("z-[1050]")}
       role="dialog"
       aria-modal="true"
       aria-labelledby={`${formId}-title`}
     >
-      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="border-b border-slate-100 px-5 py-4">
-          <h2 id={`${formId}-title`} className="text-lg font-semibold text-slate-900">
+      <div className={APP_MODAL_PANEL_CLASS}>
+        <header className={APP_MODAL_HEADER_CLASS}>
+          <h2 id={`${formId}-title`} className={APP_MODAL_TITLE_CLASS}>
             Nouveau signalement
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className={APP_MODAL_SUBTITLE_CLASS}>
             Conteneur <span className="font-mono font-semibold text-slate-800">{displaySerial}</span>
             {container.zoneName ? (
               <>
@@ -95,7 +105,7 @@ export default function ReportFormModal({
         </header>
 
         <form
-          className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4"
+          className={APP_MODAL_BODY_CLASS}
           onSubmit={(e) => {
             e.preventDefault();
             if (!busy) {
@@ -104,14 +114,16 @@ export default function ReportFormModal({
           }}
         >
           <fieldset className="m-0 border-0 p-0">
-            <legend className="mb-2 text-sm font-medium text-slate-700">Type de problème</legend>
+            <legend className="mb-2 text-sm font-medium text-slate-700">
+              Type de problème
+            </legend>
             <div className="flex flex-col gap-2">
               {REPORT_TYPE_FORM_OPTIONS.map((option) => (
                 <label
                   key={option.value}
-                  className={`flex cursor-pointer gap-3 rounded-xl border px-3 py-2.5 transition ${
+                  className={`flex cursor-pointer gap-3 rounded-xl border px-3.5 py-3 transition sm:px-4 sm:py-3.5 ${
                     issueType === option.value
-                      ? "border-sky-500 bg-sky-50"
+                      ? "border-emerald-500 bg-emerald-50"
                       : "border-slate-200 hover:border-slate-300"
                   }`}
                 >
@@ -121,12 +133,16 @@ export default function ReportFormModal({
                     value={option.value}
                     checked={issueType === option.value}
                     disabled={busy}
-                    className="mt-1"
+                    className="mt-1 shrink-0 accent-emerald-600"
                     onChange={() => setIssueType(option.value)}
                   />
-                  <span>
-                    <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
-                    <span className="block text-xs text-slate-600">{option.description}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold leading-snug text-slate-900">
+                      {option.label}
+                    </span>
+                    <span className="mt-1 block text-xs leading-snug text-slate-600">
+                      {option.description}
+                    </span>
                   </span>
                 </label>
               ))}
@@ -134,23 +150,29 @@ export default function ReportFormModal({
           </fieldset>
 
           <div>
-            <label htmlFor={`${formId}-comment`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`${formId}-comment`}
+              className="mb-0 block text-sm font-medium text-slate-700"
+            >
               Commentaire
             </label>
             <textarea
               id={`${formId}-comment`}
-              rows={3}
+              rows={2}
               maxLength={500}
               value={comment}
               disabled={busy}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Décrivez le problème observé…"
-              className="mt-1 w-full resize-y rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none ring-sky-500 focus:border-sky-500 focus:ring-2"
+              className={`${APP_FORM_CONTROL_CLASS} mt-2 resize-y`}
             />
           </div>
 
           <div>
-            <label htmlFor={`${formId}-photo`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`${formId}-photo`}
+              className="mb-0 block text-sm font-medium text-slate-700"
+            >
               Photo (optionnelle)
             </label>
             <input
@@ -158,11 +180,11 @@ export default function ReportFormModal({
               type="file"
               accept="image/*"
               disabled={busy}
-              className="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium"
+              className="mt-2 block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-emerald-900"
               onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
             />
             {isUploadingPhoto ? (
-              <p className="mt-2 text-xs font-medium text-sky-700" role="status">
+              <p className="mt-2 text-xs font-medium text-emerald-800" role="status">
                 Téléversement de la photo en cours…
               </p>
             ) : photoFile ? (
@@ -182,11 +204,11 @@ export default function ReportFormModal({
           ) : null}
         </form>
 
-        <footer className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+        <footer className={APP_MODAL_FOOTER_CLASS}>
           <button
             type="button"
             disabled={busy}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:px-4 sm:text-sm"
             onClick={onClose}
           >
             Annuler
@@ -194,7 +216,7 @@ export default function ReportFormModal({
           <button
             type="button"
             disabled={busy}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
             onClick={() => void handleSubmit()}
           >
             {isUploadingPhoto

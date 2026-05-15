@@ -1,21 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import {
+  PAGE_DESCRIPTION_CLASS,
+  PAGE_STACK_CLASS,
+  PAGE_TITLE_CLASS,
+} from "@/lib/ui/appChrome";
 
 const MOCK_ALERTES_INIT = [
-  { id: "ALT-001", capteur: "C003", zone: "Zone Est",  type: "CO2 élevé",          niveau: "critique", message: "Taux CO2 > 1200ppm",      date: "20/04/2026 10:42", resolue: false },
-  { id: "ALT-002", capteur: "C007", zone: "Zone Nord", type: "Capteur hors ligne",  niveau: "warning",  message: "Aucune donnée depuis 3h", date: "20/04/2026 09:10", resolue: false },
-  { id: "ALT-003", capteur: "C011", zone: "Centre",    type: "Humidité anormale",   niveau: "warning",  message: "Humidité > 90%",          date: "19/04/2026 22:05", resolue: false },
-  { id: "ALT-004", capteur: "C002", zone: "Zone Sud",  type: "Température haute",   niveau: "info",     message: "Temp > 35°C",             date: "19/04/2026 14:30", resolue: true  },
+  { id: "ALT-001", capteur: "C003", zone: "Zone Est", type: "CO2 élevé", niveau: "critique", message: "Taux CO2 > 1200ppm", date: "20/04/2026 10:42", resolue: false },
+  { id: "ALT-002", capteur: "C007", zone: "Zone Nord", type: "Capteur hors ligne", niveau: "warning", message: "Aucune donnée depuis 3h", date: "20/04/2026 09:10", resolue: false },
+  { id: "ALT-003", capteur: "C011", zone: "Centre", type: "Humidité anormale", niveau: "warning", message: "Humidité > 90%", date: "19/04/2026 22:05", resolue: false },
+  { id: "ALT-004", capteur: "C002", zone: "Zone Sud", type: "Température haute", niveau: "info", message: "Temp > 35°C", date: "19/04/2026 14:30", resolue: true },
 ];
 
 const NIVEAU_STYLE: Record<string, { bg: string; color: string; border: string; icon: string }> = {
   critique: { bg: "#fee2e2", color: "#dc2626", border: "#dc2626", icon: "🔴" },
-  warning:  { bg: "#fef9c3", color: "#ca8a04", border: "#ca8a04", icon: "🟡" },
-  info:     { bg: "#dbeafe", color: "#2563eb", border: "#2563eb", icon: "🔵" },
+  warning: { bg: "#fef9c3", color: "#ca8a04", border: "#ca8a04", icon: "🟡" },
+  info: { bg: "#dbeafe", color: "#2563eb", border: "#2563eb", icon: "🔵" },
 };
 
 const FILTRES = ["toutes", "critique", "warning", "info", "résolues"] as const;
+
+function filterPillClass(active: boolean) {
+  return active
+    ? "border border-emerald-600 bg-emerald-600 text-white"
+    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50";
+}
 
 export default function AlertesPage() {
   const [alertes, setAlertes] = useState(MOCK_ALERTES_INIT);
@@ -28,70 +39,124 @@ export default function AlertesPage() {
   });
 
   function resoudre(id: string) {
-    setAlertes((prev) => prev.map((a) => (a.id === id ? { ...a, resolue: true } : a)));
+    setAlertes((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, resolue: true } : a))
+    );
   }
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div className={PAGE_STACK_CLASS}>
       <div>
-        <h1 style={{ color: "#0f172a", margin: "0 0 4px" }}>Alertes</h1>
-        <p style={{ color: "#64748b", margin: 0 }}>
-          {alertes.filter((a) => !a.resolue && a.niveau === "critique").length} critiques ·{" "}
-          {alertes.filter((a) => !a.resolue && a.niveau === "warning").length} warnings ·{" "}
-          {alertes.filter((a) => a.resolue).length} résolues
+        <h1 className={PAGE_TITLE_CLASS}>Alertes</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
+          {alertes.filter((a) => !a.resolue && a.niveau === "critique").length}{" "}
+          critiques ·{" "}
+          {alertes.filter((a) => !a.resolue && a.niveau === "warning").length}{" "}
+          warnings · {alertes.filter((a) => a.resolue).length} résolues
         </p>
       </div>
 
-      {/* KPI mini */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
         {[
-          { label: "Critiques", value: alertes.filter((a) => !a.resolue && a.niveau === "critique").length, color: "#dc2626" },
-          { label: "Warnings",  value: alertes.filter((a) => !a.resolue && a.niveau === "warning").length,  color: "#ca8a04" },
-          { label: "Info",      value: alertes.filter((a) => !a.resolue && a.niveau === "info").length,     color: "#2563eb" },
-          { label: "Résolues",  value: alertes.filter((a) => a.resolue).length,                             color: "#16a34a" },
+          {
+            label: "Critiques",
+            value: alertes.filter((a) => !a.resolue && a.niveau === "critique").length,
+            color: "#dc2626",
+          },
+          {
+            label: "Warnings",
+            value: alertes.filter((a) => !a.resolue && a.niveau === "warning").length,
+            color: "#ca8a04",
+          },
+          {
+            label: "Info",
+            value: alertes.filter((a) => !a.resolue && a.niveau === "info").length,
+            color: "#2563eb",
+          },
+          {
+            label: "Résolues",
+            value: alertes.filter((a) => a.resolue).length,
+            color: "#16a34a",
+          },
         ].map((k) => (
-          <div key={k.label} style={{ background: "#fff", borderRadius: "12px", padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderTop: `3px solid ${k.color}` }}>
-            <p style={{ margin: "0 0 4px", fontSize: "24px", fontWeight: 700, color: k.color }}>{k.value}</p>
-            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>{k.label}</p>
+          <div
+            key={k.label}
+            className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm border-t-[3px] border-t-solid"
+            style={{ borderTopColor: k.color }}
+          >
+            <p
+              className="m-0 mb-1 text-2xl font-bold"
+              style={{ color: k.color }}
+            >
+              {k.value}
+            </p>
+            <p className="m-0 text-xs text-slate-600">{k.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Filtres */}
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+      <div className="flex flex-wrap gap-2">
         {FILTRES.map((f) => (
-          <button key={f} onClick={() => setFiltre(f)} style={{ padding: "6px 16px", borderRadius: "999px", border: "1px solid", fontSize: "13px", fontWeight: 500, cursor: "pointer", borderColor: filtre === f ? "#0f172a" : "#e2e8f0", backgroundColor: filtre === f ? "#0f172a" : "#fff", color: filtre === f ? "#fff" : "#64748b" }}>
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFiltre(f)}
+            className={`cursor-pointer rounded-full px-4 py-1.5 text-[13px] font-medium transition ${filterPillClass(filtre === f)}`}
+          >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
       </div>
 
-      {/* Liste alertes */}
-      <div style={{ display: "grid", gap: "12px" }}>
+      <div className="grid gap-3">
         {filtered.length === 0 && (
-          <div style={{ background: "#fff", borderRadius: "12px", padding: "48px", textAlign: "center", color: "#94a3b8" }}>
-            <p style={{ fontSize: "40px", margin: "0 0 8px" }}>✅</p>
-            <p style={{ margin: 0, fontWeight: 600, color: "#64748b" }}>Aucune alerte dans cette catégorie</p>
+          <div className="rounded-xl bg-white p-12 text-center text-slate-400 shadow-sm">
+            <p className="m-0 mb-2 text-4xl">✅</p>
+            <p className="m-0 font-semibold text-slate-600">
+              Aucune alerte dans cette catégorie
+            </p>
           </div>
         )}
         {filtered.map((a) => {
           const s = NIVEAU_STYLE[a.niveau];
           return (
-            <div key={a.id} style={{ background: a.resolue ? "#f8fafc" : "#fff", borderRadius: "12px", padding: "16px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", display: "flex", gap: "16px", alignItems: "flex-start", borderLeft: `4px solid ${a.resolue ? "#e2e8f0" : s.border}`, opacity: a.resolue ? 0.6 : 1 }}>
-              <span style={{ fontSize: "24px", flexShrink: 0 }}>{a.resolue ? "✅" : s.icon}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px", flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 700, color: "#0f172a", fontSize: "14px" }}>{a.type}</span>
-                  <span style={{ background: s.bg, color: s.color, fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px" }}>{a.niveau}</span>
-                  {a.resolue && <span style={{ background: "#dcfce7", color: "#16a34a", fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px" }}>Résolue</span>}
+            <div
+              key={a.id}
+              className={`flex gap-4 rounded-xl border-l-4 border-solid p-4 pr-5 shadow-sm sm:p-5 ${
+                a.resolue ? "bg-slate-50 opacity-60" : "bg-white"
+              }`}
+              style={{ borderLeftColor: a.resolue ? "#e2e8f0" : s.border }}
+            >
+              <span className="shrink-0 text-2xl">
+                {a.resolue ? "✅" : s.icon}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-slate-900">
+                    {a.type}
+                  </span>
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    style={{ background: s.bg, color: s.color }}
+                  >
+                    {a.niveau}
+                  </span>
+                  {a.resolue && (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                      Résolue
+                    </span>
+                  )}
                 </div>
-                <p style={{ margin: "0 0 2px", color: "#475569", fontSize: "13px" }}>{a.message} — Capteur <strong>{a.capteur}</strong> · {a.zone}</p>
-                <p style={{ margin: 0, color: "#94a3b8", fontSize: "12px" }}>{a.date}</p>
+                <p className="m-0 mb-0.5 text-[13px] text-slate-600">
+                  {a.message} — Capteur <strong>{a.capteur}</strong> · {a.zone}
+                </p>
+                <p className="m-0 text-xs text-slate-400">{a.date}</p>
               </div>
               {!a.resolue && (
                 <button
+                  type="button"
                   onClick={() => resoudre(a.id)}
-                  style={{ flexShrink: 0, padding: "6px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}
+                  className="shrink-0 self-start whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50"
                 >
                   ✓ Résoudre
                 </button>

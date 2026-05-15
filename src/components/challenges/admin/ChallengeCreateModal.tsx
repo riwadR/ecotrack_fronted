@@ -4,6 +4,17 @@ import { useEffect, useId, useState } from "react";
 import type { Challenge, ChallengeCreatePayload } from "@/lib/api/challenges";
 import type { Zone } from "@/models/zone";
 import { datetimeLocalToIso, isoToDatetimeLocal } from "@/lib/challenges/challengeUtils";
+import {
+  APP_MODAL_BODY_CLASS,
+  APP_MODAL_FOOTER_CLASS,
+  APP_MODAL_HEADER_CLASS,
+  APP_MODAL_PANEL_CLASS,
+  APP_MODAL_SUBTITLE_CLASS,
+  APP_MODAL_TITLE_CLASS,
+  APP_FORM_CONTROL_COMPACT_CLASS,
+  APP_FORM_LABEL_COMPACT_CLASS,
+  appModalBackdrop,
+} from "@/lib/ui/appChrome";
 
 export type ChallengeCreateModalProps = {
   isOpen: boolean;
@@ -98,87 +109,94 @@ export default function ChallengeCreateModal({
     });
   };
 
+  const control = `${APP_FORM_CONTROL_COMPACT_CLASS} bg-white`;
+
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/50 p-4"
+      className={appModalBackdrop("z-[1000]")}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      onClick={() => {
+        if (!isSubmitting) onCancel();
+      }}
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-        <h2 id={titleId} className="text-lg font-semibold text-slate-900">
-          {isEditMode ? "Modifier le défi" : "Nouveau défi"}
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          {isEditMode
-            ? "Mettez à jour l'objectif, la zone ou la période du défi."
-            : "Publiez un objectif collectif pour une zone et une période définies."}
-        </p>
+      <div className={APP_MODAL_PANEL_CLASS} onClick={(e) => e.stopPropagation()}>
+        <header className={APP_MODAL_HEADER_CLASS}>
+          <h2 id={titleId} className={APP_MODAL_TITLE_CLASS}>
+            {isEditMode ? "Modifier le défi" : "Nouveau défi"}
+          </h2>
+          <p className={APP_MODAL_SUBTITLE_CLASS}>
+            {isEditMode
+              ? "Mettez à jour l'objectif, la zone ou la période du défi."
+              : "Publiez un objectif collectif pour une zone et une période définies."}
+          </p>
+        </header>
 
-        <div className="mt-5 grid gap-4">
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+        <div className={`${APP_MODAL_BODY_CLASS} gap-3`}>
+          <label className={APP_FORM_LABEL_COMPACT_CLASS}>
             Titre
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+              className={control}
               disabled={isSubmitting}
             />
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className={APP_FORM_LABEL_COMPACT_CLASS}>
             Description
             <textarea
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="resize-y rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+              className={`${control} resize-y`}
               disabled={isSubmitting}
             />
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className={APP_FORM_LABEL_COMPACT_CLASS}>
             Objectif (signalements)
             <input
               type="number"
               min={1}
               value={form.goalThreshold}
               onChange={(e) => setForm((prev) => ({ ...prev, goalThreshold: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+              className={control}
               disabled={isSubmitting}
             />
           </label>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className={APP_FORM_LABEL_COMPACT_CLASS}>
               Date de début
               <input
                 type="datetime-local"
                 value={form.startDate}
                 onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+                className={control}
                 disabled={isSubmitting}
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <label className={APP_FORM_LABEL_COMPACT_CLASS}>
               Date de fin
               <input
                 type="datetime-local"
                 value={form.endDate}
                 onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+                className={control}
                 disabled={isSubmitting}
               />
             </label>
           </div>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className={APP_FORM_LABEL_COMPACT_CLASS}>
             Zone ciblée
             <select
               value={form.zoneId}
               onChange={(e) => setForm((prev) => ({ ...prev, zoneId: e.target.value }))}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+              className={control}
               disabled={isSubmitting || zones.length === 0}
             >
               <option value="">Sélectionner une zone</option>
@@ -189,20 +207,20 @@ export default function ChallengeCreateModal({
               ))}
             </select>
           </label>
+
+          {validationError ? (
+            <p className="m-0 text-xs font-medium text-red-600 sm:text-sm" role="alert">
+              {validationError}
+            </p>
+          ) : null}
         </div>
 
-        {validationError ? (
-          <p className="mt-3 text-sm font-medium text-red-600" role="alert">
-            {validationError}
-          </p>
-        ) : null}
-
-        <div className="mt-6 flex justify-end gap-2">
+        <footer className={APP_MODAL_FOOTER_CLASS}>
           <button
             type="button"
             disabled={isSubmitting}
             onClick={onCancel}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:px-4 sm:text-sm"
           >
             Annuler
           </button>
@@ -210,7 +228,7 @@ export default function ChallengeCreateModal({
             type="button"
             disabled={isSubmitting}
             onClick={handleSubmit}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 sm:px-4 sm:text-sm"
           >
             {isSubmitting
               ? isEditMode
@@ -220,7 +238,7 @@ export default function ChallengeCreateModal({
                 ? "Enregistrer"
                 : "Créer le défi"}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

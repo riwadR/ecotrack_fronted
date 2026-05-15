@@ -2,18 +2,25 @@ import DashboardKPIs from "@/components/dashboard/DashboardKPIs";
 import DashboardOverviewChart from "@/components/dashboard/DashboardOverviewChart";
 import CitizenGamificationOverview from "@/components/gamification/CitizenGamificationOverview";
 import { getSession } from "@/lib/auth";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
+/**
+ * Authenticated landing view: KPI grid, optional citizen recap, weekly chart — mobile-first typography and spacing only.
+ */
 export default async function DashboardPage() {
   const session = await getSession();
 
   return (
-    <div style={{ display: "grid", gap: "32px" }}>
-      <div>
-        <h1 style={{ color: "#0f172a", margin: "0 0 4px" }}>Tableau de bord</h1>
-        <p style={{ color: "#64748b", margin: 0 }}>Vue globale EcoTrack</p>
-      </div>
+    <div className="flex flex-col gap-6 md:gap-8 lg:gap-10">
+      <header className="flex flex-col gap-2 px-0.5 md:gap-3">
+        <h1 className={PAGE_TITLE_CLASS}>Tableau de bord</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>Vue globale EcoTrack</p>
+      </header>
+
       <DashboardKPIs />
+
       {session?.role === "CITIZEN" ? <CitizenGamificationOverview /> : null}
+
       <DashboardOverviewChart />
     </div>
   );

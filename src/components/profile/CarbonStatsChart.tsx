@@ -13,6 +13,7 @@ import {
   Filler,
 } from "chart.js";
 import { Line, Bar } from "react-chartjs-2";
+import { PAGE_STACK_CLASS, SECTION_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 ChartJS.register(
   CategoryScale,
@@ -74,48 +75,38 @@ export default function CarbonStatsChart() {
   };
 
   return (
-    <div style={{ maxWidth: "600px", margin: "32px auto 0", display: "grid", gap: "24px" }}>
-
-      {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+    <div className={`mx-auto mt-8 w-full max-w-[600px] ${PAGE_STACK_CLASS}`}>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {KPI_DATA.map((kpi) => (
           <div
             key={kpi.label}
-            style={{
-              background: "#fff",
-              borderRadius: "12px",
-              padding: "16px",
-              textAlign: "center",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-              borderTop: `3px solid ${kpi.color}`,
-            }}
+            className="rounded-xl border border-slate-100 bg-white p-4 text-center shadow-md shadow-slate-200/30 border-t-[3px] border-t-solid"
+            style={{ borderTopColor: kpi.color }}
           >
-            <p style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: kpi.color }}>
+            <p
+              className="m-0 text-[22px] font-bold"
+              style={{ color: kpi.color }}
+            >
               {kpi.value}
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#64748b" }}>
-              {kpi.label}
-            </p>
+            <p className="m-0 mt-1 text-xs text-slate-600">{kpi.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Line Chart */}
-      <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
-        <h2 style={{ margin: "0 0 20px", fontSize: "16px", color: "#0f172a" }}>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/40">
+        <h2 className={`${SECTION_TITLE_CLASS} mb-5`}>
           📈 Évolution des émissions (6 mois)
         </h2>
         <Line data={lineData} options={chartOptions} />
       </div>
 
-      {/* Bar Chart */}
-      <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
-        <h2 style={{ margin: "0 0 20px", fontSize: "16px", color: "#0f172a" }}>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/40">
+        <h2 className={`${SECTION_TITLE_CLASS} mb-5`}>
           🗂️ Répartition par catégorie (ce mois)
         </h2>
         <Bar data={barData} options={chartOptions} />
       </div>
-
     </div>
   );
 }

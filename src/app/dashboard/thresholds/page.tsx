@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  APP_FORM_CONTROL_CLASS,
+  APP_FORM_LABEL_CLASS,
+  PAGE_DESCRIPTION_CLASS,
+  PAGE_STACK_CLASS,
+  PAGE_TITLE_CLASS,
+} from "@/lib/ui/appChrome";
 import { Threshold } from "@/models/threshold";
 import { getThresholds, updateThreshold } from "@/services/api/thresholds";
 
@@ -122,23 +129,15 @@ export default function ThresholdsPage() {
   };
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div className={PAGE_STACK_CLASS}>
       <div>
-        <h1 style={{ margin: "0 0 4px", color: "#0f172a" }}>
-          Seuils de remplissage
-        </h1>
-        <p style={{ margin: 0, color: "#64748b" }}>
+        <h1 className={PAGE_TITLE_CLASS}>Seuils de remplissage</h1>
+        <p className={PAGE_DESCRIPTION_CLASS}>
           Paramètre les niveaux d’alerte et critiques par type de déchet.
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "12px",
-        }}
-      >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
         {[
           {
             label: "Types suivis",
@@ -150,8 +149,10 @@ export default function ThresholdsPage() {
             value:
               thresholds.length > 0
                 ? `${Math.round(
-                    thresholds.reduce((sum, item) => sum + item.warningLevel, 0) /
-                      thresholds.length
+                    thresholds.reduce(
+                      (sum, item) => sum + item.warningLevel,
+                      0
+                    ) / thresholds.length
                   )}%`
                 : "—",
             color: "#ca8a04",
@@ -161,8 +162,10 @@ export default function ThresholdsPage() {
             value:
               thresholds.length > 0
                 ? `${Math.round(
-                    thresholds.reduce((sum, item) => sum + item.criticalLevel, 0) /
-                      thresholds.length
+                    thresholds.reduce(
+                      (sum, item) => sum + item.criticalLevel,
+                      0
+                    ) / thresholds.length
                   )}%`
                 : "—",
             color: "#dc2626",
@@ -170,86 +173,39 @@ export default function ThresholdsPage() {
         ].map((item) => (
           <div
             key={item.label}
-            style={{
-              background: "#fff",
-              borderRadius: "12px",
-              padding: "16px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-              borderTop: `3px solid ${item.color}`,
-            }}
+            className="rounded-xl border border-slate-100 bg-white p-4 shadow-md shadow-slate-200/30 border-t-[3px] border-t-solid"
+            style={{ borderTopColor: item.color }}
           >
             <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: "24px",
-                fontWeight: 700,
-                color: item.color,
-              }}
+              className="m-0 mb-1.5 text-2xl font-bold"
+              style={{ color: item.color }}
             >
               {item.value}
             </p>
-            <p style={{ margin: 0, color: "#64748b", fontSize: "12px" }}>
-              {item.label}
-            </p>
+            <p className="m-0 text-xs text-slate-600">{item.label}</p>
           </div>
         ))}
       </div>
 
       {error ? (
-        <div
-          style={{
-            background: "#fee2e2",
-            color: "#dc2626",
-            borderRadius: "12px",
-            padding: "12px 14px",
-            fontSize: "14px",
-            fontWeight: 600,
-          }}
-        >
+        <div className="rounded-xl bg-red-50 px-3.5 py-3 text-sm font-semibold text-red-700">
           {error}
         </div>
       ) : null}
 
       {success ? (
-        <div
-          style={{
-            background: "#dcfce7",
-            color: "#16a34a",
-            borderRadius: "12px",
-            padding: "12px 14px",
-            fontSize: "14px",
-            fontWeight: 600,
-          }}
-        >
+        <div className="rounded-xl bg-emerald-50 px-3.5 py-3 text-sm font-semibold text-emerald-800">
           {success}
         </div>
       ) : null}
 
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "16px",
-          padding: "24px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-        }}
-      >
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/40">
         {loading ? (
-          <p style={{ margin: 0, color: "#64748b" }}>Chargement des seuils...</p>
+          <p className="m-0 text-slate-600">Chargement des seuils...</p>
         ) : (
           <>
             <div className="table-desktop">
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1.2fr 1fr 1fr 1fr",
-                  padding: "10px 16px",
-                  borderBottom: "1px solid #e2e8f0",
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                }}
-              >
+              <div className="grid grid-cols-[1.2fr_1fr_1fr_1fr] gap-3 border-b border-slate-200 px-4 py-2.5 text-xs font-semibold uppercase text-slate-400">
                 <span>Type</span>
                 <span>Seuil alerte</span>
                 <span>Seuil critique</span>
@@ -259,116 +215,88 @@ export default function ThresholdsPage() {
               {thresholds.map((item) => (
                 <div
                   key={item.type}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1.2fr 1fr 1fr 1fr",
-                    padding: "14px 16px",
-                    borderBottom: "1px solid #f1f5f9",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
+                  className="grid grid-cols-[1.2fr_1fr_1fr_1fr] items-center gap-3 border-b border-slate-100 px-4 py-3.5"
                 >
                   <div>
-                    <p style={{ margin: "0 0 4px", color: "#0f172a", fontWeight: 700 }}>
+                    <p className="m-0 mb-1 font-bold text-slate-900">
                       {typeLabels[item.type] || item.type}
                     </p>
-                    <p style={{ margin: 0, color: "#94a3b8", fontSize: "12px" }}>
-                      {item.type}
-                    </p>
+                    <p className="m-0 text-xs text-slate-400">{item.type}</p>
                   </div>
 
                   <input
                     type="number"
                     min={0}
                     max={100}
+                    className={APP_FORM_CONTROL_CLASS}
                     value={editing[item.type]?.warningLevel ?? item.warningLevel}
                     onChange={(e) =>
-                      handleChange(item.type, "warningLevel", Number(e.target.value))
+                      handleChange(
+                        item.type,
+                        "warningLevel",
+                        Number(e.target.value)
+                      )
                     }
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "10px",
-                      border: "1px solid #e2e8f0",
-                      fontSize: "14px",
-                    }}
                   />
 
                   <input
                     type="number"
                     min={0}
                     max={100}
-                    value={editing[item.type]?.criticalLevel ?? item.criticalLevel}
-                    onChange={(e) =>
-                      handleChange(item.type, "criticalLevel", Number(e.target.value))
+                    className={APP_FORM_CONTROL_CLASS}
+                    value={
+                      editing[item.type]?.criticalLevel ?? item.criticalLevel
                     }
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "10px",
-                      border: "1px solid #e2e8f0",
-                      fontSize: "14px",
-                    }}
+                    onChange={(e) =>
+                      handleChange(
+                        item.type,
+                        "criticalLevel",
+                        Number(e.target.value)
+                      )
+                    }
                   />
 
                   <button
                     type="button"
                     onClick={() => handleSave(item.type)}
                     disabled={savingType === item.type}
-                    style={{
-                      background: "#0f172a",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "10px",
-                      padding: "10px 14px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      opacity: savingType === item.type ? 0.7 : 1,
-                    }}
+                    className="rounded-lg bg-emerald-600 px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {savingType === item.type ? "Enregistrement..." : "Enregistrer"}
+                    {savingType === item.type
+                      ? "Enregistrement..."
+                      : "Enregistrer"}
                   </button>
                 </div>
               ))}
             </div>
 
             <div className="cards-mobile">
-              <div style={{ display: "grid", gap: "12px" }}>
+              <div className="grid gap-3">
                 {thresholds.map((item) => (
                   <div
                     key={item.type}
-                    style={{
-                      border: "1px solid #f1f5f9",
-                      borderRadius: "12px",
-                      padding: "16px",
-                    }}
+                    className="rounded-xl border border-slate-100 p-4"
                   >
-                    <p style={{ margin: "0 0 4px", color: "#0f172a", fontWeight: 700 }}>
+                    <p className="m-0 mb-1 font-bold text-slate-900">
                       {typeLabels[item.type] || item.type}
                     </p>
-                    <p style={{ margin: "0 0 14px", color: "#94a3b8", fontSize: "12px" }}>
+                    <p className="m-0 mb-3.5 text-xs text-slate-400">
                       {item.type}
                     </p>
 
-                    <div style={{ display: "grid", gap: "12px" }}>
+                    <div className="grid gap-3">
                       <div>
-                        <label
-                          style={{
-                            display: "block",
-                            marginBottom: "6px",
-                            color: "#64748b",
-                            fontSize: "13px",
-                            fontWeight: 600,
-                          }}
-                        >
+                        <label className={APP_FORM_LABEL_CLASS}>
                           Seuil alerte
                         </label>
                         <input
                           type="number"
                           min={0}
                           max={100}
+                          className={APP_FORM_CONTROL_CLASS}
                           value={
-                            editing[item.type]?.warningLevel ?? item.warningLevel
+                            editing[item.type]?.warningLevel ??
+                            item.warningLevel
                           }
                           onChange={(e) =>
                             handleChange(
@@ -377,34 +305,21 @@ export default function ThresholdsPage() {
                               Number(e.target.value)
                             )
                           }
-                          style={{
-                            width: "100%",
-                            padding: "10px 12px",
-                            borderRadius: "10px",
-                            border: "1px solid #e2e8f0",
-                            fontSize: "14px",
-                          }}
                         />
                       </div>
 
                       <div>
-                        <label
-                          style={{
-                            display: "block",
-                            marginBottom: "6px",
-                            color: "#64748b",
-                            fontSize: "13px",
-                            fontWeight: 600,
-                          }}
-                        >
+                        <label className={APP_FORM_LABEL_CLASS}>
                           Seuil critique
                         </label>
                         <input
                           type="number"
                           min={0}
                           max={100}
+                          className={APP_FORM_CONTROL_CLASS}
                           value={
-                            editing[item.type]?.criticalLevel ?? item.criticalLevel
+                            editing[item.type]?.criticalLevel ??
+                            item.criticalLevel
                           }
                           onChange={(e) =>
                             handleChange(
@@ -413,13 +328,6 @@ export default function ThresholdsPage() {
                               Number(e.target.value)
                             )
                           }
-                          style={{
-                            width: "100%",
-                            padding: "10px 12px",
-                            borderRadius: "10px",
-                            border: "1px solid #e2e8f0",
-                            fontSize: "14px",
-                          }}
                         />
                       </div>
 
@@ -427,18 +335,11 @@ export default function ThresholdsPage() {
                         type="button"
                         onClick={() => handleSave(item.type)}
                         disabled={savingType === item.type}
-                        style={{
-                          background: "#0f172a",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "10px",
-                          padding: "10px 14px",
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          opacity: savingType === item.type ? 0.7 : 1,
-                        }}
+                        className="rounded-lg bg-emerald-600 px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
                       >
-                        {savingType === item.type ? "Enregistrement..." : "Enregistrer"}
+                        {savingType === item.type
+                          ? "Enregistrement..."
+                          : "Enregistrer"}
                       </button>
                     </div>
                   </div>

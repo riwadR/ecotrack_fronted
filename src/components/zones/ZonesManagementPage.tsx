@@ -48,11 +48,18 @@ import {
 import { CrossDeleteIcon, PencilIcon } from "@/components/zones/zoneTableIcons";
 import type { ZonePolygonLayer } from "@/components/zones/ZoneManagementMap";
 import { findZoneIdContainingPoint } from "@/lib/zones/pointInZonePolygon";
+import { MAP_LOADING_CLASS_ADMIN } from "@/lib/map/mapShellLayout";
+import {
+  PAGE_DESCRIPTION_CLASS,
+  PAGE_STACK_CLASS,
+  PAGE_TITLE_CLASS,
+} from "@/lib/ui/appChrome";
+import { usePointerCoarse } from "@/hooks/usePointerCoarse";
 
 const ZoneManagementMap = dynamic(() => import("@/components/zones/ZoneManagementMap"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[min(72vh,620px)] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+    <div className={MAP_LOADING_CLASS_ADMIN}>
       Chargement de la carte…
     </div>
   ),
@@ -67,6 +74,7 @@ export type ZonesManagementPageProps = {
  */
 export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageProps) {
   const spatialEditingEnabled = viewerRole === "ADMIN" || viewerRole === "MANAGER";
+  const pointerCoarse = usePointerCoarse();
 
   const [zones, setZones] = useState<Zone[]>([]);
   const [adminContainers, setAdminContainers] = useState<AdminMapContainer[]>([]);
@@ -302,7 +310,13 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   const handleRequestRelocation = useCallback((container: AdminMapContainer) => {
     setIsAddingContainer(false);
     setRelocatingContainer(container);
-    setToastMessage(`Cliquez sur la carte pour placer « ${container.serialNumber} ».`);
+    const coarse =
+      typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+    setToastMessage(
+      coarse
+        ? `Touchez la carte à l'emplacement voulu pour repositionner « ${container.serialNumber} ».`
+        : `Cliquez sur la carte à l'emplacement voulu pour repositionner « ${container.serialNumber} ».`
+    );
   }, []);
 
   const handleRequestContainerEditFromMap = useCallback((marker: AdminMapContainer) => {
@@ -727,7 +741,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   }, [zoneToDelete, zoneDeletePreview, reloadGeometries, removeZoneFromState]);
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div className={PAGE_STACK_CLASS}>
       <ZoneDeleteConfirmModal
         isOpen={zoneToDelete !== null}
         preview={zoneDeletePreview}
@@ -778,7 +792,6 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         <ZoneDetailsEditModal
           key={editingZone.id}
           isOpen={editingZone !== null}
-          zoneId={editingZone.id}
           initialName={editingZone.name}
           initialDescription={editingZone.description ?? ""}
           isSubmitting={editModalSubmitting}
@@ -796,18 +809,10 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         onCancel={handleNameModalCancel}
       />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "16px",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 style={{ color: "#0f172a", margin: "0 0 4px" }}>Zones &amp; Conteneurs</h1>
-          <p style={{ color: "#64748b", margin: 0 }}>
+          <h1 className={PAGE_TITLE_CLASS}>Zones &amp; Conteneurs</h1>
+          <p className={PAGE_DESCRIPTION_CLASS}>
             Carte opérationnelle : secteurs, conteneurs et outils de gestion.
           </p>
           {spatialEditingEnabled ? (
@@ -836,22 +841,11 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
           )}
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "flex-end" }}>
+        <div className="flex flex-wrap justify-end gap-2.5">
           {viewerRole === "ADMIN" ? (
             <Link
               href="/dashboard/infrastructure/nouveau"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                textDecoration: "none",
-                background: "#0f172a",
-                color: "#fff",
-                padding: "10px 16px",
-                borderRadius: "10px",
-                fontWeight: 700,
-                fontSize: "13px",
-              }}
+              className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-[13px] font-bold text-white no-underline shadow-sm transition hover:bg-slate-800"
             >
               Formulaire WKT (admin)
             </Link>
@@ -859,10 +853,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         </div>
       </div>
 
-      <div
-        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-        style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}
-      >
+      <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-md shadow-slate-200/40 sm:p-4 md:p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0 text-base font-semibold text-slate-900">Carte des secteurs</h2>
           {spatialEditingEnabled ? (
@@ -889,7 +880,17 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         </div>
         {relocatingContainer ? (
           <p className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-            Mode déplacement : cliquez sur la carte pour repositionner « {relocatingContainer.serialNumber} ».
+            {pointerCoarse ? (
+              <>
+                Mode déplacement : touchez la carte à l&apos;emplacement voulu pour repositionner «{" "}
+                {relocatingContainer.serialNumber} ».
+              </>
+            ) : (
+              <>
+                Mode déplacement : cliquez sur la carte à l&apos;emplacement voulu pour repositionner «{" "}
+                {relocatingContainer.serialNumber} ».
+              </>
+            )}
             <button
               type="button"
               className="ml-2 font-semibold underline"
@@ -901,7 +902,9 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         ) : null}
         {isAddingContainer ? (
           <p className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-            Cliquez sur la carte pour placer le nouveau conteneur.
+            {pointerCoarse
+              ? "Touchez la carte pour placer le nouveau conteneur."
+              : "Cliquez sur la carte pour placer le nouveau conteneur."}
           </p>
         ) : null}
         {mapMutationError ? (
@@ -927,7 +930,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
               : {})}
           />
         ) : loading ? (
-          <div className="flex h-[min(72vh,620px)] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+          <div className={MAP_LOADING_CLASS_ADMIN}>
             Préparation de la carte…
           </div>
         ) : (
@@ -935,13 +938,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         )}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "12px",
-        }}
-      >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
         {[
           { label: "Total zones", value: zones.length, color: "#0ea5e9" },
           {
@@ -953,78 +950,42 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         ].map((item) => (
           <div
             key={item.label}
-            style={{
-              background: "#fff",
-              borderRadius: "12px",
-              padding: "16px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-              borderTop: `3px solid ${item.color}`,
-            }}
+            className="rounded-xl border border-slate-100 bg-white p-4 shadow-md shadow-slate-200/30 border-t-[3px] border-t-solid"
+            style={{ borderTopColor: item.color }}
           >
             <p
-              style={{
-                margin: "0 0 4px",
-                fontSize: "24px",
-                fontWeight: 700,
-                color: item.color,
-              }}
+              className="m-0 mb-1 text-2xl font-bold"
+              style={{ color: item.color }}
             >
               {item.value}
             </p>
-            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>{item.label}</p>
+            <p className="m-0 text-xs text-slate-600">{item.label}</p>
           </div>
         ))}
       </div>
 
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "16px",
-          padding: "24px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-        }}
-      >
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/40">
         {tableMutationError ? (
           <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
             {tableMutationError}
           </div>
         ) : null}
         {loading ? (
-          <p style={{ margin: 0, color: "#64748b" }}>Chargement des zones...</p>
+          <p className="m-0 text-slate-600">Chargement des zones...</p>
         ) : error ? (
-          <div
-            style={{
-              background: "#fee2e2",
-              color: "#dc2626",
-              borderRadius: "12px",
-              padding: "12px 14px",
-              fontSize: "14px",
-              fontWeight: 600,
-            }}
-          >
+          <div className="rounded-xl bg-red-50 px-3.5 py-3 text-sm font-semibold text-red-700">
             {error}
           </div>
         ) : zones.length === 0 ? (
-          <div
-            style={{
-              display: "grid",
-              gap: "12px",
-            }}
-          >
-            <p style={{ margin: 0, color: "#64748b" }}>Aucune zone disponible pour le moment.</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+          <div className="grid gap-3">
+            <p className="m-0 text-slate-600">
+              Aucune zone disponible pour le moment.
+            </p>
+            <div className="flex flex-wrap gap-2.5">
               {viewerRole === "ADMIN" ? (
                 <Link
                   href="/dashboard/infrastructure/nouveau"
-                  style={{
-                    display: "inline-flex",
-                    textDecoration: "none",
-                    background: "#0f172a",
-                    color: "#fff",
-                    padding: "10px 16px",
-                    borderRadius: "10px",
-                    fontWeight: 700,
-                  }}
+                  className="inline-flex rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white no-underline shadow-sm transition hover:bg-slate-800"
                 >
                   Créer une zone (WKT)
                 </Link>
@@ -1034,18 +995,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         ) : (
           <>
             <div className="table-desktop">
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(200px, 1.45fr) 1fr 2fr 1fr",
-                  padding: "10px 16px",
-                  borderBottom: "1px solid #e2e8f0",
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                }}
-              >
+              <div className="grid grid-cols-[minmax(200px,1.45fr)_1fr_2fr_1fr] gap-3 border-b border-slate-200 px-4 py-2.5 text-xs font-semibold uppercase text-slate-400">
                 <span>Zone</span>
                 <span>Ville</span>
                 <span>Description</span>
@@ -1055,17 +1005,9 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
               {zones.map((zone) => (
                 <div
                   key={zone.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(200px, 1.45fr) 1fr 2fr 1fr",
-                    padding: "14px 16px",
-                    borderBottom: "1px solid #f1f5f9",
-                    alignItems: "center",
-                    fontSize: "14px",
-                    gap: "12px",
-                  }}
+                  className="grid grid-cols-[minmax(200px,1.45fr)_1fr_2fr_1fr] items-center gap-3 border-b border-slate-100 px-4 py-3.5 text-sm"
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                  <div className="flex min-w-0 items-center gap-2.5">
                     {spatialEditingEnabled ? (
                       <div className="flex shrink-0 items-center gap-1">
                         <button
@@ -1086,26 +1028,19 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
                         </button>
                       </div>
                     ) : null}
-                    <div style={{ minWidth: 0 }}>
-                      <p
-                        style={{
-                          margin: "0 0 2px",
-                          fontWeight: 700,
-                          color: "#0f172a",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
+                    <div className="min-w-0">
+                      <p className="m-0 mb-0.5 truncate font-bold text-slate-900">
                         {zone.name}
                       </p>
-                      <p style={{ margin: 0, color: "#94a3b8", fontSize: "12px" }}>{zone.id}</p>
+                      <p className="m-0 text-xs text-slate-400">{zone.id}</p>
                     </div>
                   </div>
 
-                  <span style={{ color: "#475569" }}>{zone.city || "—"}</span>
+                  <span className="text-slate-600">{zone.city || "—"}</span>
 
-                  <span style={{ color: "#64748b" }}>{zone.description || "Aucune description"}</span>
+                  <span className="text-slate-600">
+                    {zone.description || "Aucune description"}
+                  </span>
 
                   {renderContainerCount(zone)}
                 </div>
@@ -1113,26 +1048,14 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
             </div>
 
             <div className="cards-mobile">
-              <div style={{ display: "grid", gap: "12px" }}>
+              <div className="grid gap-3">
                 {zones.map((zone) => (
                   <div
                     key={zone.id}
-                    style={{
-                      border: "1px solid #f1f5f9",
-                      borderRadius: "12px",
-                      padding: "16px",
-                    }}
+                    className="rounded-xl border border-slate-100 p-4"
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: "12px",
-                        alignItems: "flex-start",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", minWidth: 0 }}>
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-start gap-2.5">
                         {spatialEditingEnabled ? (
                           <div className="flex shrink-0 items-center gap-1">
                             <button
@@ -1153,21 +1076,24 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
                             </button>
                           </div>
                         ) : null}
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ margin: "0 0 2px", fontWeight: 700, color: "#0f172a" }}>{zone.name}</p>
-                          <p style={{ margin: 0, color: "#94a3b8", fontSize: "12px" }}>{zone.id}</p>
+                        <div className="min-w-0">
+                          <p className="m-0 mb-0.5 font-bold text-slate-900">
+                            {zone.name}
+                          </p>
+                          <p className="m-0 text-xs text-slate-400">{zone.id}</p>
                         </div>
                       </div>
 
                       {renderContainerCount(zone)}
                     </div>
 
-                    <p style={{ margin: "0 0 4px", color: "#64748b", fontSize: "13px" }}>
-                      <strong style={{ color: "#0f172a" }}>Ville :</strong> {zone.city || "—"}
+                    <p className="m-0 mb-1 text-[13px] text-slate-600">
+                      <strong className="text-slate-900">Ville :</strong>{" "}
+                      {zone.city || "—"}
                     </p>
 
-                    <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
-                      <strong style={{ color: "#0f172a" }}>Description :</strong>{" "}
+                    <p className="m-0 text-[13px] text-slate-600">
+                      <strong className="text-slate-900">Description :</strong>{" "}
                       {zone.description || "Aucune description"}
                     </p>
                   </div>
@@ -1175,14 +1101,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
               </div>
             </div>
 
-            <p
-              style={{
-                padding: "12px 4px 0",
-                color: "#94a3b8",
-                fontSize: "13px",
-                margin: 0,
-              }}
-            >
+            <p className="m-0 px-1 pt-3 text-[13px] text-slate-400">
               {zones.length} zone{zones.length > 1 ? "s" : ""}
             </p>
           </>

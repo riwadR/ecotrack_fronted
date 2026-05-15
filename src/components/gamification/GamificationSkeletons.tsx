@@ -42,12 +42,15 @@ export function BadgeProgressSkeleton() {
 
 export function BadgeGridSkeleton() {
   return (
-    <div className="flex w-full flex-wrap justify-start gap-4">
+    <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 sm:gap-4">
       {Array.from({ length: 8 }).map((_, index) => (
-        <SkeletonCard key={index} className="w-[150px] p-5">
-          <SkeletonBlock className="h-16 w-16 rounded-2xl" />
-          <SkeletonBlock className="h-4 w-4/5 rounded-md" />
-          <SkeletonBlock className="h-3 w-2/3 rounded-md" />
+        <SkeletonCard
+          key={index}
+          className="flex aspect-square min-h-0 flex-col items-center justify-center gap-2 p-3"
+        >
+          <SkeletonBlock className="size-12 shrink-0 rounded-2xl sm:size-14" />
+          <SkeletonBlock className="h-3 w-4/5 rounded-md" />
+          <SkeletonBlock className="h-2.5 w-2/3 rounded-md" />
         </SkeletonCard>
       ))}
     </div>
@@ -56,11 +59,11 @@ export function BadgeGridSkeleton() {
 
 export function MyBadgesSkeleton() {
   return (
-    <SkeletonCard className="p-8">
+    <SkeletonCard className="p-4 sm:p-6 lg:p-8">
       <SkeletonBlock className="h-5 w-36 rounded-md" />
-      <div className="flex flex-wrap justify-start gap-4">
+      <div className="mt-4 grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 sm:gap-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <SkeletonBlock key={index} className="h-24 w-[120px] rounded-xl" />
+          <SkeletonBlock key={index} className="aspect-square w-full rounded-xl" />
         ))}
       </div>
     </SkeletonCard>

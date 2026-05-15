@@ -26,6 +26,7 @@ import ChallengeCreateModal from "@/components/challenges/admin/ChallengeCreateM
 import ChallengeDetailDrawer from "@/components/challenges/ChallengeDetailDrawer";
 import { ChallengeAdminTableSkeleton } from "@/components/challenges/ChallengeSkeletons";
 import ReportToast from "@/components/reports/ReportToast";
+import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-800 ring-emerald-200",
@@ -133,10 +134,8 @@ export default function ChallengesAdminPage() {
     <div className="grid gap-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="m-0 mb-1 text-3xl font-extrabold tracking-tight text-slate-900">
-            Gestion des défis
-          </h1>
-          <p className="m-0 text-slate-500">
+          <h1 className={PAGE_TITLE_CLASS}>Gestion des défis</h1>
+          <p className={PAGE_DESCRIPTION_CLASS}>
             Créez et suivez les défis communautaires par zone.
           </p>
         </div>

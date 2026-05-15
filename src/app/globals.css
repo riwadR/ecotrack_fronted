@@ -6,6 +6,15 @@
   border: none !important;
 }
 
+/*
+ * Tailwind Preflight sets `img { max-width: 100%; }`, which distorts Leaflet
+ * control sprites (draw toolbar + default controls). Reset for map UI only.
+ */
+.leaflet-control-container img,
+.leaflet-draw-toolbar img {
+  max-width: none !important;
+}
+
 /* Zone name labels — always visible, never block map clicks */
 .ecotrack-zone-label {
   background: transparent !important;
@@ -16,10 +25,32 @@
 /* Leaflet.draw — tooltips plus lisibles (page Zones) */
 .leaflet-draw-toolbar a {
   background-color: #ffffff !important;
+  /* Keep sprite alignment: dimensions must stay consistent with leaflet.draw sheet (30px row). */
+  box-sizing: border-box !important;
+  display: block !important;
+  padding: 0 !important;
+  text-align: center !important;
 }
 
 .leaflet-draw-toolbar a:hover {
   background-color: #f1f5f9 !important;
+}
+
+/*
+ * Compact toolbox on the infrastructure / zones map (class from mapShellLayout).
+ * Default bar is 26×26 (non-touch) or 30×30 (leaflet-touch). Avoid enlarging past
+ * 30px or spritesheet background-positions no longer match the icon cells.
+ */
+.ecotrack-zone-draw-map .leaflet-draw-toolbar a {
+  width: 26px !important;
+  height: 26px !important;
+  line-height: 26px !important;
+}
+
+.ecotrack-zone-draw-map .leaflet-container.leaflet-touch .leaflet-draw-toolbar a {
+  width: 30px !important;
+  height: 30px !important;
+  line-height: 30px !important;
 }
 
 .leaflet-draw-actions a {
@@ -180,4 +211,49 @@
 
 .leaflet-container.ecotrack-map--relocate-container .ecotrack-map-marker--draggable {
   cursor: grab !important;
+}
+
+/* --- Responsive map UX: popups, draw tools (admin), locate control shrink --- */
+
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+  max-width: min(340px, calc(100vw - 2.5rem));
+}
+
+@media (max-width: 1023px) {
+  .leaflet-popup-content {
+    margin: 8px 10px;
+    max-width: min(280px, calc(100vw - 2rem));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  /* Match 30px sprite row so draw icons stay centered (40px broke spritesheet alignment). */
+  .leaflet-draw-toolbar a {
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+  }
+
+  .leaflet-draw-actions a {
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .ecotrack-locate-control__label {
+    display: none;
+  }
+
+  .ecotrack-locate-control {
+    gap: 0;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 9999px;
+  }
 }
