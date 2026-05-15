@@ -6,7 +6,7 @@ import { Marker, Popup } from "react-leaflet";
 import type { Container } from "@/models/map";
 import type { Role } from "@/models/user";
 import { getFillLevelCategory } from "@/lib/map/fillLevelCategory";
-import { canShowCreateRouteAction, canShowReportIssueAction } from "@/lib/map/mapActionPermissions";
+import { canShowCreateRouteAction } from "@/lib/map/mapActionPermissions";
 
 const FILL_COLOR_BY_CATEGORY = {
   low: "#22c55e",
@@ -14,10 +14,20 @@ const FILL_COLOR_BY_CATEGORY = {
   high: "#ef4444",
 } as const;
 
-function buildMarkerIcon(fillLevelPercent: number): L.DivIcon {
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Actif",
+  INACTIVE: "Inactif",
+  WARNING: "Alerte",
+  CRITICAL: "Critique",
+};
+
+function buildMarkerIcon(fillLevelPercent: number, isSelected: boolean): L.DivIcon {
   const category = getFillLevelCategory(fillLevelPercent);
   const color = FILL_COLOR_BY_CATEGORY[category];
-  const sizePx = 26;
+  const sizePx = isSelected ? 32 : 26;
+  const boxShadow = isSelected
+    ? "0 0 0 3px #0ea5e9, 0 2px 8px rgba(15,23,42,0.35)"
+    : "0 2px 8px rgba(15,23,42,0.35)";
 
   return L.divIcon({
     className: "ecotrack-map-marker",
@@ -27,7 +37,7 @@ function buildMarkerIcon(fillLevelPercent: number): L.DivIcon {
       border-radius:9999px;
       background:${color};
       border:3px solid #ffffff;
-      box-shadow:0 2px 8px rgba(15,23,42,0.35);
+      box-shadow:${boxShadow};
     "></div>`,
     iconSize: [sizePx, sizePx],
     iconAnchor: [sizePx / 2, sizePx / 2],
@@ -38,8 +48,10 @@ function buildMarkerIcon(fillLevelPercent: number): L.DivIcon {
 export type ContainerMarkerProps = {
   container: Container;
   viewerRole: Role;
+  isSelected?: boolean;
   onReportIssue?: (containerId: string) => void;
   onCreateRoute?: (containerId: string) => void;
+  onContainerSelect?: (container: Container) => void;
 };
 
 /**
@@ -48,12 +60,14 @@ export type ContainerMarkerProps = {
 export default function ContainerMarker({
   container,
   viewerRole,
+  isSelected = false,
   onReportIssue,
   onCreateRoute,
+  onContainerSelect,
 }: ContainerMarkerProps) {
   const icon = useMemo(
-    () => buildMarkerIcon(container.fillLevelPercent),
-    [container.fillLevelPercent]
+    () => buildMarkerIcon(container.fillLevelPercent, isSelected),
+    [container.fillLevelPercent, isSelected]
   );
 
   const lastMeasuredLabel = new Date(container.lastMeasurementAt).toLocaleString("fr-FR", {
@@ -61,18 +75,37 @@ export default function ContainerMarker({
     timeStyle: "short",
   });
 
-  const showReport = canShowReportIssueAction(viewerRole);
-  const showRoute = canShowCreateRouteAction(viewerRole);
+  const displaySerial = container.serialNumber ?? container.id;
+  const statusLabel = container.status ? STATUS_LABELS[container.status] ?? container.status : null;
+
+  const showReport = Boolean(onReportIssue);
+  const showRoute = Boolean(onCreateRoute) && canShowCreateRouteAction(viewerRole);
 
   return (
-    <Marker position={[container.latitude, container.longitude]} icon={icon}>
+    <Marker
+      position={[container.latitude, container.longitude]}
+      icon={icon}
+      eventHandlers={{
+        click: () => onContainerSelect?.(container),
+        popupopen: () => onContainerSelect?.(container),
+      }}
+    >
       <Popup>
-        <div className="flex min-w-[200px] flex-col gap-2 p-1 text-slate-800">
+        <div className="flex min-w-[220px] flex-col gap-2 p-1 text-slate-800">
           <div>
             <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Conteneur</p>
-            <p className="m-0 font-mono text-sm font-bold text-slate-900">{container.id}</p>
+            <p className="m-0 font-mono text-sm font-bold text-slate-900">{displaySerial}</p>
+            {container.zoneName ? (
+              <p className="m-0 mt-0.5 text-xs text-slate-600">Secteur : {container.zoneName}</p>
+            ) : null}
           </div>
           <div className="flex flex-col gap-0.5 text-sm">
+            {statusLabel ? (
+              <span>
+                <span className="font-medium text-slate-600">Statut : </span>
+                <span className="font-semibold text-slate-900">{statusLabel}</span>
+              </span>
+            ) : null}
             <span>
               <span className="font-medium text-slate-600">Remplissage : </span>
               <span className="font-semibold text-slate-900">{container.fillLevelPercent}%</span>

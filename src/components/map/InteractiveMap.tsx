@@ -17,13 +17,22 @@ const OSM_ATTRIBUTION =
 
 export type InteractiveMapProps = {
   containers: Container[];
-  zones: Zone[];
+  zones?: Zone[];
   viewerRole: Role;
   center?: [number, number];
   zoom?: number;
   className?: string;
   /** Optional banner for role-specific UX (e.g. agent tour API pending). */
   operationalNotice?: string | null;
+  /** When set, highlights the matching marker (e.g. list selection). */
+  selectedContainerId?: string | null;
+  /** Parent handler for “Signaler un problème” from marker popups. */
+  onReportIssue?: (containerId: string) => void;
+  /** Parent handler when a marker is opened or clicked. */
+  onContainerSelect?: (container: Container) => void;
+  onCreateRoute?: (containerId: string) => void;
+  /** Hide zone polygons when only containers matter (signalements page). */
+  showZones?: boolean;
 };
 
 const ZONE_PATH_OPTIONS = {
@@ -38,20 +47,24 @@ const ZONE_PATH_OPTIONS = {
  */
 export default function InteractiveMap({
   containers,
-  zones,
+  zones = [],
   viewerRole,
   center = DEFAULT_MAP_CENTER,
   zoom = DEFAULT_MAP_ZOOM,
   className,
   operationalNotice = null,
+  selectedContainerId = null,
+  onReportIssue,
+  onContainerSelect,
+  onCreateRoute,
+  showZones = true,
 }: InteractiveMapProps) {
   const handleReportIssue = (containerId: string) => {
-    // Placeholder until backend workflow exists
-    console.info("report issue (mock)", containerId);
+    onReportIssue?.(containerId);
   };
 
   const handleCreateRoute = (containerId: string) => {
-    console.info("create route (mock)", containerId);
+    onCreateRoute?.(containerId);
   };
 
   return (
@@ -72,20 +85,24 @@ export default function InteractiveMap({
         >
           <MapResizeBridge />
           <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
-          {zones.map((zone) => (
-            <Polygon key={zone.id} positions={zone.polygon} pathOptions={{ ...ZONE_PATH_OPTIONS }}>
-              <Tooltip direction="center" opacity={1}>
-                <span className="text-sm font-semibold text-slate-800">{zone.name}</span>
-              </Tooltip>
-            </Polygon>
-          ))}
+          {showZones
+            ? zones.map((zone) => (
+                <Polygon key={zone.id} positions={zone.polygon} pathOptions={{ ...ZONE_PATH_OPTIONS }}>
+                  <Tooltip direction="center" opacity={1}>
+                    <span className="text-sm font-semibold text-slate-800">{zone.name}</span>
+                  </Tooltip>
+                </Polygon>
+              ))
+            : null}
           {containers.map((container) => (
             <ContainerMarker
               key={container.id}
               container={container}
               viewerRole={viewerRole}
-              onReportIssue={handleReportIssue}
-              onCreateRoute={handleCreateRoute}
+              isSelected={selectedContainerId === container.id}
+              onReportIssue={onReportIssue ? handleReportIssue : undefined}
+              onCreateRoute={onCreateRoute ? handleCreateRoute : undefined}
+              onContainerSelect={onContainerSelect}
             />
           ))}
         </MapContainer>

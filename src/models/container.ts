@@ -28,6 +28,7 @@ export type ContainerAlert = {
 
 export type Container = {
   id: string;
+  serialNumber?: string;
   code?: string;
   name: string;
   wasteType: WasteType;

@@ -17,6 +17,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/dashboard/profile",   label: "👤 Profil",       roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
   { href: "/dashboard/zones", label: "📍 Zones", roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/dashboard/map", label: "🗺️ Carte", roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
+  { href: "/dashboard/signalements", label: "📢 Signalements", roles: ["AGENT", "CITIZEN"] },
   { href: "/dashboard/gamification", label: "Gamification", roles: ["CITIZEN"] },
   { href: "/dashboard/classement", label: "Classement", roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
 ];
