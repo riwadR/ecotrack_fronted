@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { resetSessionExpiredGuard } from "@/lib/api/authSession";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function LoginForm() {
         return;
       }
 
-      // Le cookie session + JWT est posé côté serveur (route handler).
+      resetSessionExpiredGuard();
       router.push("/dashboard");
       router.refresh();
     } catch {

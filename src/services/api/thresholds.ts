@@ -1,46 +1,28 @@
 import { Threshold, UpdateThresholdPayload } from "@/models/threshold";
 import { WasteType } from "@/models/container";
-
-const API_URL = "/api/backend";
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let message = "Une erreur est survenue.";
-    try {
-      const errorData = await response.json();
-      message = errorData?.message || message;
-    } catch {
-      //
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
-}
+import { backendApiClient } from "@/lib/api/apiClient";
+import { toApiError } from "@/lib/api/apiErrors";
 
 export async function getThresholds(): Promise<Threshold[]> {
-  const response = await fetch(`${API_URL}/thresholds`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
-
-  return handleResponse<Threshold[]>(response);
+  try {
+    const { data } = await backendApiClient.get<Threshold[]>("thresholds");
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger les seuils.");
+  }
 }
 
 export async function updateThreshold(
   type: WasteType,
   payload: UpdateThresholdPayload
 ): Promise<Threshold> {
-  const response = await fetch(`${API_URL}/thresholds/${type}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  return handleResponse<Threshold>(response);
+  try {
+    const { data } = await backendApiClient.put<Threshold>(
+      `thresholds/${encodeURIComponent(type)}`,
+      payload
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de mettre à jour le seuil.");
+  }
 }

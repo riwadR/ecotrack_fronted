@@ -1,25 +1,5 @@
-const API_URL = "/api/backend";
-
-async function handleJsonResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let message = "Request failed.";
-    try {
-      const errorData: unknown = await response.json();
-      if (
-        typeof errorData === "object" &&
-        errorData !== null &&
-        "message" in errorData &&
-        typeof (errorData as { message: unknown }).message === "string"
-      ) {
-        message = (errorData as { message: string }).message;
-      }
-    } catch {
-      //
-    }
-    throw new Error(message);
-  }
-  return response.json() as Promise<T>;
-}
+import { backendApiClient } from "@/lib/api/apiClient";
+import { toApiError } from "@/lib/api/apiErrors";
 
 /**
  * Raw container row as returned by GET /api/containers (Jackson field names).
@@ -46,19 +26,20 @@ export type ZoneApiRecord = {
 };
 
 export async function fetchContainersForMap(): Promise<ContainerApiRecord[]> {
-  const response = await fetch(`${API_URL}/containers`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  return handleJsonResponse<ContainerApiRecord[]>(response);
+  try {
+    const { data } =
+      await backendApiClient.get<ContainerApiRecord[]>("containers");
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger les conteneurs pour la carte.");
+  }
 }
 
 export async function fetchZonesForMap(): Promise<ZoneApiRecord[]> {
-  const response = await fetch(`${API_URL}/zones`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  return handleJsonResponse<ZoneApiRecord[]>(response);
+  try {
+    const { data } = await backendApiClient.get<ZoneApiRecord[]>("zones");
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger les zones pour la carte.");
+  }
 }

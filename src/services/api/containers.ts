@@ -3,93 +3,61 @@ import {
   CreateContainerPayload,
   IoTPayload,
 } from "@/models/container";
-
-const API_URL = "/api/backend";
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let message = "Une erreur est survenue.";
-    try {
-      const errorData = await response.json();
-      message = errorData?.message || message;
-    } catch {
-      //
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
-}
+import { backendApiClient } from "@/lib/api/apiClient";
+import { toApiError } from "@/lib/api/apiErrors";
 
 export async function getContainers(): Promise<Container[]> {
-  const response = await fetch(`${API_URL}/containers`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
-
-  return handleResponse<Container[]>(response);
+  try {
+    const { data } = await backendApiClient.get<Container[]>("containers");
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger les conteneurs.");
+  }
 }
 
 export async function getContainerById(id: string): Promise<Container> {
-  const response = await fetch(`${API_URL}/containers/${id}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
-
-  return handleResponse<Container>(response);
+  try {
+    const { data } = await backendApiClient.get<Container>(
+      `containers/${encodeURIComponent(id)}`
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger le conteneur.");
+  }
 }
 
 export async function createContainer(
   payload: CreateContainerPayload
 ): Promise<Container> {
-  const response = await fetch(`${API_URL}/containers`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  return handleResponse<Container>(response);
-}
-
-export async function deleteContainer(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/containers/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    let message = "Impossible de supprimer le container.";
-    try {
-      const errorData = await response.json();
-      message = errorData?.message || message;
-    } catch {
-      //
-    }
-    throw new Error(message);
+  try {
+    const { data } = await backendApiClient.post<Container>(
+      "containers",
+      payload
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de créer le conteneur.");
   }
 }
 
-export async function sendIoTPayload(payload: IoTPayload): Promise<{
-  success: boolean;
-  message?: string;
-}> {
-  const response = await fetch(`${API_URL}/containers/iot/payload`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+export async function deleteContainer(id: string): Promise<void> {
+  try {
+    await backendApiClient.delete(`containers/${encodeURIComponent(id)}`);
+  } catch (error) {
+    throw toApiError(error, "Impossible de supprimer le conteneur.");
+  }
+}
 
-  return handleResponse<{ success: boolean; message?: string }>(response);
+export async function sendIoTPayload(
+  payload: IoTPayload
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const { data } = await backendApiClient.post<{
+      success: boolean;
+      message?: string;
+    }>("containers/iot/payload", payload);
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible d'envoyer la charge IoT.");
+  }
 }

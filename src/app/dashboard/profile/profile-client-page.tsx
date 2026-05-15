@@ -5,18 +5,12 @@ import { useRouter } from "next/navigation";
 import { SessionUser } from "@/lib/auth";
 
 import { Role } from "@/models/user";
-
-type UserProfileResponse = {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  dateOfBirth?: string | number[] | null;
-  emailVerified?: boolean;
-  mfaEnabled?: boolean;
-  createdAt?: string;
-  role: Role;
-};
+import {
+  changeUserPassword,
+  getUserByEmail,
+  updateUserProfile,
+  type UserProfileResponse,
+} from "@/services/api/profile";
 
 function normalizeDateOfBirthInput(
   value: UserProfileResponse["dateOfBirth"]
@@ -69,83 +63,6 @@ const labelStyle: React.CSSProperties = {
   fontSize: "14px",
 };
 
-async function getCurrentUserByEmail(email: string): Promise<UserProfileResponse> {
-  const response = await fetch(
-    `/api/backend/users/email/${encodeURIComponent(email)}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-      credentials: "include",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Impossible de charger le profil utilisateur.");
-  }
-
-  return response.json();
-}
-
-async function updateUser(
-  id: string,
-  payload: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    dateOfBirth?: string | null;
-  }
-): Promise<UserProfileResponse> {
-  const response = await fetch(`/api/backend/users/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    let message = "Impossible de mettre à jour le profil.";
-    try {
-      const errorData = await response.json();
-      message = errorData?.message || message;
-    } catch {
-      //
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
-}
-
-async function changePassword(
-  id: string,
-  payload: { oldPassword: string; newPassword: string }
-): Promise<void> {
-  const response = await fetch(`/api/backend/users/${id}/password`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    let message = "Impossible de changer le mot de passe.";
-    try {
-      const errorData = await response.json();
-      message = errorData?.message || message;
-    } catch {
-      //
-    }
-    throw new Error(message);
-  }
-}
-
 export default function ProfileClientPage({
   session,
 }: {
@@ -179,7 +96,7 @@ export default function ProfileClientPage({
       try {
         setLoading(true);
         setError("");
-        const user = await getCurrentUserByEmail(session.email);
+        const user = await getUserByEmail(session.email);
         setUserId(user.id);
         setRole(user.role);
         setEmailVerified(Boolean(user.emailVerified));
@@ -247,7 +164,7 @@ export default function ProfileClientPage({
     try {
       setSubmitting(true);
 
-      const updated = await updateUser(userId, {
+      const updated = await updateUserProfile(userId, {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),
@@ -296,7 +213,7 @@ export default function ProfileClientPage({
 
     try {
       setChangingPassword(true);
-      await changePassword(userId, {
+      await changeUserPassword(userId, {
         oldPassword: passwordForm.oldPassword,
         newPassword: passwordForm.newPassword,
       });

@@ -1,7 +1,11 @@
 import DashboardKPIs from "@/components/dashboard/DashboardKPIs";
 import DashboardOverviewChart from "@/components/dashboard/DashboardOverviewChart";
+import CitizenGamificationOverview from "@/components/gamification/CitizenGamificationOverview";
+import { getSession } from "@/lib/auth";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await getSession();
+
   return (
     <div style={{ display: "grid", gap: "32px" }}>
       <div>
@@ -9,6 +13,7 @@ export default function DashboardPage() {
         <p style={{ color: "#64748b", margin: 0 }}>Vue globale EcoTrack</p>
       </div>
       <DashboardKPIs />
+      {session?.role === "CITIZEN" ? <CitizenGamificationOverview /> : null}
       <DashboardOverviewChart />
     </div>
   );

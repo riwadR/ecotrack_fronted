@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import Sidebar from "@/components/dashboard/Sidebar";
+import AuthClientShell from "@/components/auth/AuthClientShell";
 
 export default async function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default async function DashboardLayout({
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc" }}>
+      <AuthClientShell />
       <Sidebar role={session.role} name={session.name} />
       <main
         style={{
