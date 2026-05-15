@@ -1,30 +1,11 @@
 import type { Container, Zone } from "@/models/map";
 import type { ContainerApiRecord, ZoneApiRecord } from "@/services/api/mapDataSource";
+import { normalizeSensorTimestampToIso } from "@/lib/datetime/sensorTimestamp";
 import { wktPolygonOuterRingToLatLngTuples } from "@/lib/map/wktToLeafletRing";
 
-/**
- * Normalizes Spring/Jackson `LocalDateTime` payloads (ISO string or numeric array) to ISO-8601 UTC text.
- */
+/** @deprecated Use {@link normalizeSensorTimestampToIso} from `@/lib/datetime/sensorTimestamp`. */
 export function normalizeLastSensorUpdateToIso(value: ContainerApiRecord["lastSensorUpdate"]): string {
-  if (value == null) {
-    return new Date(0).toISOString();
-  }
-  if (typeof value === "string") {
-    const parsed = Date.parse(value);
-    return Number.isFinite(parsed) ? new Date(parsed).toISOString() : new Date(0).toISOString();
-  }
-  if (Array.isArray(value) && value.length >= 3) {
-    const year = Number(value[0]);
-    const monthIndex = Number(value[1]) - 1;
-    const day = Number(value[2]);
-    const hour = value.length > 3 ? Number(value[3]) : 0;
-    const minute = value.length > 4 ? Number(value[4]) : 0;
-    const second = value.length > 5 ? Number(value[5]) : 0;
-    if ([year, monthIndex, day, hour, minute, second].every((n) => Number.isFinite(n))) {
-      return new Date(Date.UTC(year, monthIndex, day, hour, minute, second)).toISOString();
-    }
-  }
-  return new Date(0).toISOString();
+  return normalizeSensorTimestampToIso(value) ?? new Date(0).toISOString();
 }
 
 export function mapApiContainerToMapContainer(record: ContainerApiRecord): Container | null {

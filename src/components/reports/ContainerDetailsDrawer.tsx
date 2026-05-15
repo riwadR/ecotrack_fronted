@@ -1,6 +1,8 @@
 "use client";
 
 import type { Container } from "@/models/map";
+import { getContainerTypeLabel } from "@/lib/containers/containerTypeLabels";
+import { formatSensorTimestampFr } from "@/lib/datetime/sensorTimestamp";
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Actif",
@@ -32,10 +34,8 @@ export default function ContainerDetailsDrawer({
     ? STATUS_LABELS[container.status] ?? container.status
     : "—";
 
-  const lastMeasuredLabel = new Date(container.lastMeasurementAt).toLocaleString("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const lastMeasuredLabel = formatSensorTimestampFr(container.lastMeasurementAt);
+  const containerTypeLabel = getContainerTypeLabel(container.containerType);
 
   return (
     <aside
@@ -67,6 +67,10 @@ export default function ContainerDetailsDrawer({
         </div>
 
         <dl className="m-0 grid gap-3 text-sm">
+          <div>
+            <dt className="font-medium text-slate-500">Type de conteneur</dt>
+            <dd className="m-0 font-semibold text-slate-900">{containerTypeLabel}</dd>
+          </div>
           <div>
             <dt className="font-medium text-slate-500">Secteur</dt>
             <dd className="m-0 font-semibold text-slate-900">{container.zoneName ?? "—"}</dd>

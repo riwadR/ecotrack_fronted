@@ -5,6 +5,8 @@ import L from "leaflet";
 import { Marker, Popup } from "react-leaflet";
 import type { Container } from "@/models/map";
 import type { Role } from "@/models/user";
+import { getContainerTypeLabel } from "@/lib/containers/containerTypeLabels";
+import { formatSensorTimestampFr } from "@/lib/datetime/sensorTimestamp";
 import { getFillLevelCategory } from "@/lib/map/fillLevelCategory";
 import { canShowCreateRouteAction } from "@/lib/map/mapActionPermissions";
 
@@ -70,7 +72,7 @@ export default function ContainerMarker({
     [container.fillLevelPercent, isSelected]
   );
 
-  const lastMeasuredLabel = new Date(container.lastMeasurementAt).toLocaleString("fr-FR", {
+  const lastMeasuredLabel = formatSensorTimestampFr(container.lastMeasurementAt, {
     dateStyle: "short",
     timeStyle: "short",
   });
@@ -95,6 +97,11 @@ export default function ContainerMarker({
           <div>
             <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Conteneur</p>
             <p className="m-0 font-mono text-sm font-bold text-slate-900">{displaySerial}</p>
+            {container.containerType ? (
+              <p className="m-0 mt-0.5 text-xs text-slate-600">
+                Type : {getContainerTypeLabel(container.containerType)}
+              </p>
+            ) : null}
             {container.zoneName ? (
               <p className="m-0 mt-0.5 text-xs text-slate-600">Secteur : {container.zoneName}</p>
             ) : null}

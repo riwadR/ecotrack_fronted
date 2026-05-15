@@ -3,7 +3,7 @@
  * These types describe map rendering only and are intentionally decoupled from REST API models.
  */
 
-import type { ContainerStatus } from "@/models/container";
+import type { ContainerStatus, ContainerType } from "@/models/container";
 
 /** IoT-enabled waste container rendered as a map marker. */
 export interface Container {
@@ -18,6 +18,7 @@ export interface Container {
   serialNumber?: string;
   zoneName?: string;
   status?: ContainerStatus;
+  containerType?: ContainerType;
 }
 
 /**

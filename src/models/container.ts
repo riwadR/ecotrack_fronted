@@ -1,10 +1,15 @@
+/** Mirrors backend `com.ingetis.ecotrack.entity.enums.container.ContainerType`. */
+export type ContainerType = "GLASS" | "PLASTIC" | "PAPER" | "GENERAL";
+
+/** @deprecated Prefer {@link ContainerType} aligned with the backend `Container.type` field. */
 export type WasteType =
   | "PLASTIC"
   | "PAPER"
   | "GLASS"
   | "METAL"
   | "ORGANIC"
-  | "MIXED";
+  | "MIXED"
+  | "GENERAL";
 
 export type ContainerStatus = "ACTIVE" | "INACTIVE" | "WARNING" | "CRITICAL";
 
@@ -31,7 +36,9 @@ export type Container = {
   serialNumber?: string;
   code?: string;
   name: string;
-  wasteType: WasteType;
+  /** Backend field name (`ContainerResponseDTO.type`). */
+  type?: ContainerType;
+  wasteType?: WasteType;
   status: ContainerStatus;
   fillLevel?: number;
   latitude?: number;
@@ -42,6 +49,8 @@ export type Container = {
   lastCollectionAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  /** Latest IoT reading timestamp from `lastSensorUpdate` (API root field). */
+  lastSensorUpdate?: string | (number | string)[] | null;
   lastMeasurement?: ContainerMeasurement | null;
   measurementHistory?: ContainerMeasurement[];
   alerts?: ContainerAlert[];

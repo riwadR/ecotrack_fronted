@@ -23,10 +23,48 @@ export type CreateReportPayload = {
   photoUrl: string;
 };
 
-export type ReportResponse = {
+/** Mirrors backend `ReportStatus` enum (management dashboard). */
+export const REPORT_STATUS_VALUES = [
+  "PENDING",
+  "VALIDATED",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "REJECTED",
+] as const;
+
+export type ReportStatus = (typeof REPORT_STATUS_VALUES)[number];
+
+/** Statuses exposed in management tabs. */
+export type ReportManagementTabStatus =
+  | "PENDING"
+  | "VALIDATED"
+  | "RESOLVED"
+  | "REJECTED";
+
+export type ReportUpdateStatus =
+  | "VALIDATED"
+  | "REJECTED"
+  | "RESOLVED"
+  | "PENDING";
+
+export type ReportListItem = {
   id: string;
   type: ReportType;
-  status: string;
-  containerId?: string;
+  status: ReportStatus;
+  latitude?: number | null;
+  longitude?: number | null;
+  photoUrl?: string | null;
+  comment?: string | null;
   createdAt?: string;
+  reporterId?: string;
+  reporterFirstName?: string;
+  containerId?: string;
+  containerSerialNumber?: string;
+  containerZoneName?: string;
+};
+
+export type ReportResponse = ReportListItem;
+
+export type UpdateReportStatusPayload = {
+  status: ReportUpdateStatus;
 };

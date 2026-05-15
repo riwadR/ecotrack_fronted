@@ -7,8 +7,7 @@ import type { Role } from "@/models/user";
 import { mapApiContainerToReportMapContainer } from "@/lib/reports/reportContainerMapper";
 import { getContainers } from "@/services/api/containers";
 import { createReport } from "@/services/api/reports";
-import ContainerSearchBar from "@/components/reports/ContainerSearchBar";
-import ContainerListFallback from "@/components/reports/ContainerListFallback";
+import ContainerSearchCombobox from "@/components/reports/ContainerSearchCombobox";
 import ContainerDetailsDrawer from "@/components/reports/ContainerDetailsDrawer";
 import ReportFormModal from "@/components/reports/ReportFormModal";
 import CitizenReportSuccessModal from "@/components/reports/CitizenReportSuccessModal";
@@ -86,8 +85,6 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
     () => containers.filter((c) => containerMatchesSearch(c, normalizedSearch)),
     [containers, normalizedSearch]
   );
-
-  const showListFallback = normalizedSearch.length > 0;
 
   const openContainerDetails = useCallback((container: Container) => {
     setSelectedContainer(container);
@@ -177,25 +174,13 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
       ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <ContainerSearchBar
+        <ContainerSearchCombobox
+          containers={containers}
           value={searchTerm}
           onChange={setSearchTerm}
-          resultCount={filteredContainers.length}
-          totalCount={containers.length}
+          selectedContainerId={selectedContainer?.id ?? null}
+          onSelect={openContainerDetails}
         />
-
-        {showListFallback ? (
-          <div className="mt-4">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-              Résultats (liste)
-            </p>
-            <ContainerListFallback
-              containers={filteredContainers}
-              selectedContainerId={selectedContainer?.id ?? null}
-              onSelect={openContainerDetails}
-            />
-          </div>
-        ) : null}
 
         <section className="mt-4">
           {isLoading ? (

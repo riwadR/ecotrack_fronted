@@ -1,5 +1,28 @@
 import type { Container as ApiContainer } from "@/models/container";
 import type { Container as MapContainer } from "@/models/map";
+import { resolveContainerType } from "@/lib/containers/containerTypeLabels";
+import {
+  normalizeSensorTimestampToIso,
+  type SensorTimestampInput,
+} from "@/lib/datetime/sensorTimestamp";
+
+function resolveLastMeasurementIso(record: ApiContainer): string {
+  const candidates: SensorTimestampInput[] = [
+    record.lastSensorUpdate,
+    record.lastMeasurement?.measuredAt,
+    record.updatedAt,
+    record.createdAt,
+  ];
+
+  for (const candidate of candidates) {
+    const iso = normalizeSensorTimestampToIso(candidate);
+    if (iso) {
+      return iso;
+    }
+  }
+
+  return new Date(0).toISOString();
+}
 
 /**
  * Maps a REST container row into a map marker model for the signalements page.
@@ -15,11 +38,6 @@ export function mapApiContainerToReportMapContainer(
 
   const fill = record.fillLevel ?? record.lastMeasurement?.fillLevel ?? 0;
   const clampedFill = Math.min(100, Math.max(0, fill));
-  const measuredAt =
-    record.lastMeasurement?.measuredAt ??
-    record.updatedAt ??
-    record.createdAt ??
-    new Date(0).toISOString();
 
   const serialNumber =
     record.serialNumber?.trim() ||
@@ -27,14 +45,17 @@ export function mapApiContainerToReportMapContainer(
     record.name?.trim() ||
     record.id;
 
+  const containerType = resolveContainerType(record.type, record.wasteType);
+
   return {
     id: String(record.id),
     latitude: lat,
     longitude: lng,
     fillLevelPercent: clampedFill,
-    lastMeasurementAt: measuredAt,
+    lastMeasurementAt: resolveLastMeasurementIso(record),
     serialNumber,
     zoneName: record.zoneName,
     status: record.status,
+    containerType,
   };
 }
