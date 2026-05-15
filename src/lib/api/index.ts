@@ -12,3 +12,17 @@ export {
   extractApiErrorMessage,
   toApiError,
 } from "@/lib/api/apiErrors";
+export {
+  createChallenge,
+  getChallengeDetail,
+  getChallenges,
+  getMyChallengeReports,
+  joinChallenge,
+  type Challenge,
+  type ChallengeContribution,
+  type ChallengeCreatePayload,
+  type ChallengeDetail,
+  type ChallengeOutcome,
+  type ChallengeUserReport,
+  type ChallengeZone,
+} from "@/lib/api/challenges";

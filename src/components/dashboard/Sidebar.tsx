@@ -24,6 +24,12 @@ const NAV_LINKS: NavLink[] = [
     roles: ["ADMIN", "AGENT"],
   },
   { href: "/dashboard/gamification", label: "Gamification", roles: ["CITIZEN"] },
+  { href: "/dashboard/challenges", label: "🏆 Défis", roles: ["CITIZEN"] },
+  {
+    href: "/dashboard/admin/challenges",
+    label: "🏆 Gestion défis",
+    roles: ["ADMIN"],
+  },
   { href: "/dashboard/classement", label: "Classement", roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
 ];
 
