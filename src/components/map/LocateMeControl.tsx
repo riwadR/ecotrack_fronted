@@ -22,7 +22,7 @@ export default function LocateMeControl() {
   useEffect(() => {
     const LocateControl = L.Control.extend({
       onAdd() {
-        const wrapper = L.DomUtil.create("motionless", "leaflet-control ecotrack-locate-wrapper");
+        const wrapper = L.DomUtil.create("div", "leaflet-control ecotrack-locate-wrapper");
 
         const button = L.DomUtil.create("button", "ecotrack-locate-control") as HTMLButtonElement;
         button.type = "button";

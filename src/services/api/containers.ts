@@ -1,8 +1,10 @@
 import {
   Container,
+  ContainerType,
   CreateContainerPayload,
   IoTPayload,
 } from "@/models/container";
+import type { BackendContainerStatus } from "@/lib/containers/backendContainerStatus";
 import { backendApiClient } from "@/lib/api/apiClient";
 import { toApiError } from "@/lib/api/apiErrors";
 
@@ -43,6 +45,49 @@ export async function createContainer(
 export type UpdateContainerPayload = {
   serialNumber: string;
 };
+
+export type MapContainerCreatePayload = {
+  serialNumber: string;
+  type: ContainerType;
+  latitude: number;
+  longitude: number;
+  zoneId: string;
+  status: BackendContainerStatus;
+};
+
+export type MapContainerPutPayload = {
+  serialNumber: string;
+  type: ContainerType;
+  latitude: number;
+  longitude: number;
+  zoneId: string;
+  status: BackendContainerStatus;
+  fillLevel: number;
+};
+
+export async function createMapContainer(payload: MapContainerCreatePayload): Promise<Container> {
+  try {
+    const { data } = await backendApiClient.post<Container>("containers", payload);
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de créer le conteneur.");
+  }
+}
+
+export async function putMapContainer(
+  id: string,
+  payload: MapContainerPutPayload
+): Promise<Container> {
+  try {
+    const { data } = await backendApiClient.put<Container>(
+      `containers/${encodeURIComponent(id)}`,
+      payload
+    );
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de mettre à jour le conteneur.");
+  }
+}
 
 export async function getContainersByZone(zoneId: string): Promise<Container[]> {
   try {

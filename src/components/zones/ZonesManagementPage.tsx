@@ -2,17 +2,16 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Polygon } from "leaflet";
 import type { Container } from "@/models/container";
-import type { Container as MapContainerModel } from "@/models/map";
 import type { Role } from "@/models/user";
 import type { Zone } from "@/models/zone";
 import { mapApiZoneToMapZone } from "@/lib/map/mapDtoMappers";
 import { wktPolygonOuterRingToLatLngTuples } from "@/lib/map/wktToLeafletRing";
 import { getPolygonOuterRingLatLng } from "@/lib/zones/polygonGeoUtils";
 import { latLngRingToPolygonWkt } from "@/lib/zones/wktFromLeaflet";
-import { mapApiContainerForZoneAdmin } from "@/lib/zones/mapContainerForZoneAdmin";
+import { toAdminMapContainer, type AdminMapContainer } from "@/lib/map/adminMapContainer";
 import {
   createZone,
   deleteZone,
@@ -24,18 +23,31 @@ import {
 import type { ZoneDeletionPreview } from "@/services/api/zones";
 import ZoneDeleteConfirmModal from "@/components/zones/ZoneDeleteConfirmModal";
 import {
+  createMapContainer,
   deleteContainer,
   getContainers,
   getContainersByZone,
-  updateContainer,
+  putMapContainer,
 } from "@/services/api/containers";
+import InfrastructureContainerLayer from "@/components/infrastructure/InfrastructureContainerLayer";
+import InfrastructureMapClickCapture from "@/components/infrastructure/InfrastructureMapClickCapture";
+import CreateContainerDrawer, {
+  type CreateContainerDrawerFormValues,
+} from "@/components/infrastructure/CreateContainerDrawer";
+import ReportToast from "@/components/reports/ReportToast";
 import { fetchZonesForMap } from "@/services/api/mapDataSource";
 import ZoneNameModal from "@/components/zones/ZoneNameModal";
 import ZoneDetailsEditModal from "@/components/zones/ZoneDetailsEditModal";
 import ZoneContainersPanel from "@/components/zones/ZoneContainersPanel";
-import ContainerSerialEditModal from "@/components/zones/ContainerSerialEditModal";
+import ContainerFullEditModal from "@/components/zones/ContainerFullEditModal";
+import {
+  adminMarkerToFullEdit,
+  containerApiRowToFullEdit,
+  type ContainerFullEditValues,
+} from "@/lib/zones/containerFullEditValues";
 import { CrossDeleteIcon, PencilIcon } from "@/components/zones/zoneTableIcons";
 import type { ZonePolygonLayer } from "@/components/zones/ZoneManagementMap";
+import { findZoneIdContainingPoint } from "@/lib/zones/pointInZonePolygon";
 
 const ZoneManagementMap = dynamic(() => import("@/components/zones/ZoneManagementMap"), {
   ssr: false,
@@ -57,7 +69,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   const spatialEditingEnabled = viewerRole === "ADMIN" || viewerRole === "MANAGER";
 
   const [zones, setZones] = useState<Zone[]>([]);
-  const [mapContainers, setMapContainers] = useState<MapContainerModel[]>([]);
+  const [adminContainers, setAdminContainers] = useState<AdminMapContainer[]>([]);
   const [mapPolygons, setMapPolygons] = useState<ZonePolygonLayer[]>([]);
   const mapDrawSessionLockRef = useRef(false);
   const [mapDrawSessionLocked, setMapDrawSessionLocked] = useState(false);
@@ -79,7 +91,9 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   const [panelLoading, setPanelLoading] = useState(false);
   const [panelError, setPanelError] = useState<string | null>(null);
 
-  const [editingContainer, setEditingContainer] = useState<Container | null>(null);
+  const [containerBeingEdited, setContainerBeingEdited] = useState<ContainerFullEditValues | null>(
+    null
+  );
   const [containerEditSubmitting, setContainerEditSubmitting] = useState(false);
   const [containerEditError, setContainerEditError] = useState<string | null>(null);
 
@@ -88,6 +102,19 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   const [zoneDeletePreviewLoading, setZoneDeletePreviewLoading] = useState(false);
   const [zoneDeletePreviewError, setZoneDeletePreviewError] = useState<string | null>(null);
   const [zoneDeleteSubmitting, setZoneDeleteSubmitting] = useState(false);
+
+  const [isAddingContainer, setIsAddingContainer] = useState(false);
+  const [relocatingContainer, setRelocatingContainer] = useState<AdminMapContainer | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [pendingCoordinates, setPendingCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+    suggestedZoneId: string;
+    sectorInferredFromMapClick: boolean;
+  } | null>(null);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const pendingPolygonRef = useRef<Polygon | null>(null);
   const pendingDiscardRef = useRef<(() => void) | null>(null);
@@ -104,23 +131,13 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
       list: Zone[],
       containerRows: Container[],
       rawZones: Awaited<ReturnType<typeof fetchZonesForMap>>,
-      options?: { syncMapGeometry?: boolean; syncMapContainers?: boolean }
+      options?: { syncMapGeometry?: boolean }
     ) => {
       const enriched = list.map((zone) => ({
         ...zone,
         containersCount: zone.containersCount ?? 0,
       }));
       setZones(enriched);
-
-      const shouldSyncContainers =
-        options?.syncMapContainers ?? !mapDrawSessionLockRef.current;
-      if (shouldSyncContainers) {
-        setMapContainers(
-          containerRows
-            .map(mapApiContainerForZoneAdmin)
-            .filter((container): container is MapContainerModel => container !== null)
-        );
-      }
 
       const polygons: ZonePolygonLayer[] = rawZones
         .map(mapApiZoneToMapZone)
@@ -168,11 +185,28 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
       ]);
       applyInventory(list, containerRows, rawZones, {
         syncMapGeometry: !mapDrawSessionLockRef.current,
-        syncMapContainers: !mapDrawSessionLockRef.current,
       });
+
+      if (!mapDrawSessionLockRef.current) {
+        setAdminContainers(
+          containerRows
+            .map(toAdminMapContainer)
+            .filter((container): container is AdminMapContainer => container !== null)
+        );
+      }
     },
     [applyInventory]
   );
+
+  const refreshAdminContainers = useCallback(async () => {
+    if (mapDrawSessionLockRef.current) {
+      return;
+    }
+    const rows = await getContainers();
+    setAdminContainers(
+      rows.map(toAdminMapContainer).filter((row): row is AdminMapContainer => row !== null)
+    );
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -224,23 +258,162 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         setPanelLoading(false);
       }
     },
-    [zones]
+    []
   );
 
-  const handleMapContainerSelect = useCallback(
-    (mapContainer: MapContainerModel) => {
-      const zone =
-        (mapContainer.zoneId
-          ? zones.find((item) => item.id === mapContainer.zoneId)
-          : undefined) ??
-        (mapContainer.zoneName
-          ? zones.find((item) => item.name === mapContainer.zoneName)
-          : undefined);
-      if (zone) {
-        void openContainersPanel(zone);
+  const handleContainerDragEnd = useCallback(
+    async (container: AdminMapContainer, latitude: number, longitude: number) => {
+      const previousLatitude = container.latitude;
+      const previousLongitude = container.longitude;
+
+      setAdminContainers((current) =>
+        current.map((item) =>
+          item.id === container.id ? { ...item, latitude, longitude } : item
+        )
+      );
+
+      try {
+        await putMapContainer(container.id, {
+          serialNumber: container.serialNumber,
+          type: container.type,
+          latitude,
+          longitude,
+          zoneId: container.zoneId,
+          status: container.status,
+          fillLevel: Math.min(100, Math.max(0, Math.round(container.fillLevelPercent))),
+        });
+        setToastMessage("Position mise à jour");
+      } catch (err) {
+        setAdminContainers((current) =>
+          current.map((item) =>
+            item.id === container.id
+              ? { ...item, latitude: previousLatitude, longitude: previousLongitude }
+              : item
+          )
+        );
+        setToastMessage(
+          err instanceof Error ? err.message : "Impossible de mettre à jour la position."
+        );
       }
     },
-    [zones, openContainersPanel]
+    []
+  );
+
+  const handleRequestRelocation = useCallback((container: AdminMapContainer) => {
+    setIsAddingContainer(false);
+    setRelocatingContainer(container);
+    setToastMessage(`Cliquez sur la carte pour placer « ${container.serialNumber} ».`);
+  }, []);
+
+  const handleRequestContainerEditFromMap = useCallback((marker: AdminMapContainer) => {
+    setIsAddingContainer(false);
+    setRelocatingContainer(null);
+    setDrawerOpen(false);
+    setPendingCoordinates(null);
+    setContainerEditError(null);
+    setContainerBeingEdited(adminMarkerToFullEdit(marker));
+  }, []);
+
+  const handleInfrastructureMapClick = useCallback(
+    (latitude: number, longitude: number) => {
+      if (relocatingContainer) {
+        const target = relocatingContainer;
+        setRelocatingContainer(null);
+        void handleContainerDragEnd(target, latitude, longitude);
+        return;
+      }
+      if (isAddingContainer) {
+        setIsAddingContainer(false);
+        const suggestedZoneId =
+          findZoneIdContainingPoint(latitude, longitude, mapPolygons) ?? "";
+        setPendingCoordinates({
+          latitude,
+          longitude,
+          suggestedZoneId,
+          sectorInferredFromMapClick: suggestedZoneId !== "",
+        });
+        setCreateError(null);
+        setDrawerOpen(true);
+      }
+    },
+    [
+      handleContainerDragEnd,
+      isAddingContainer,
+      relocatingContainer,
+      mapPolygons,
+    ]
+  );
+
+  const handleCloseCreateDrawer = useCallback(() => {
+    if (createSubmitting) {
+      return;
+    }
+    setDrawerOpen(false);
+    setPendingCoordinates(null);
+    setCreateError(null);
+  }, [createSubmitting]);
+
+  const handleCreateContainer = useCallback(
+    async (values: CreateContainerDrawerFormValues) => {
+      if (!pendingCoordinates) {
+        return;
+      }
+      setCreateSubmitting(true);
+      setCreateError(null);
+      try {
+        await createMapContainer({
+          serialNumber: values.serialNumber,
+          type: values.type,
+          latitude: pendingCoordinates.latitude,
+          longitude: pendingCoordinates.longitude,
+          zoneId: values.zoneId,
+          status: values.status,
+        });
+        setDrawerOpen(false);
+        setPendingCoordinates(null);
+        setToastMessage("Conteneur créé avec succès.");
+        await reloadGeometries();
+      } catch (err) {
+        setCreateError(err instanceof Error ? err.message : "Impossible de créer le conteneur.");
+      } finally {
+        setCreateSubmitting(false);
+      }
+    },
+    [pendingCoordinates, reloadGeometries]
+  );
+
+  const infrastructureMapOverlay: ReactNode = useMemo(
+    () => (
+      <>
+        <InfrastructureMapClickCapture
+          enabled={isAddingContainer || relocatingContainer !== null}
+          cursorClass={
+            relocatingContainer ? "ecotrack-map--relocate-container" : "ecotrack-map--add-container"
+          }
+          onMapClick={handleInfrastructureMapClick}
+        />
+        <InfrastructureContainerLayer
+          containers={adminContainers}
+          canManage={spatialEditingEnabled}
+          relocatingContainerId={relocatingContainer?.id ?? null}
+          onContainerDragEnd={(container, lat, lng) => {
+            void handleContainerDragEnd(container, lat, lng);
+          }}
+          onRequestRelocation={handleRequestRelocation}
+          onRequestEdit={handleRequestContainerEditFromMap}
+        />
+      </>
+    ),
+    [
+      adminContainers,
+      handleContainerDragEnd,
+      handleRequestContainerEditFromMap,
+      handleInfrastructureMapClick,
+      handleRequestRelocation,
+      isAddingContainer,
+      relocatingContainer,
+      spatialEditingEnabled,
+    ]
   );
 
   const closeContainersPanel = useCallback(() => {
@@ -249,21 +422,28 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     setPanelError(null);
   }, []);
 
-  const handleSaveContainerSerial = useCallback(
-    async (serialNumber: string) => {
-      if (!editingContainer) {
-        return;
-      }
+  const handleSaveContainerFull = useCallback(
+    async (values: ContainerFullEditValues) => {
       try {
         setContainerEditError(null);
         setContainerEditSubmitting(true);
-        await updateContainer(editingContainer.id, { serialNumber });
-        setEditingContainer(null);
+        await putMapContainer(values.id, {
+          serialNumber: values.serialNumber.trim(),
+          type: values.type,
+          latitude: values.latitude,
+          longitude: values.longitude,
+          zoneId: values.zoneId,
+          status: values.status,
+          fillLevel: values.fillLevel,
+        });
+        setContainerBeingEdited(null);
         await reloadGeometries();
+        await refreshAdminContainers();
         if (containersPanelZone) {
           const refreshed = await getContainersByZone(containersPanelZone.id);
           setPanelContainers(refreshed);
         }
+        setToastMessage("Conteneur mis à jour.");
       } catch (err) {
         setContainerEditError(
           err instanceof Error ? err.message : "Impossible de mettre à jour le conteneur."
@@ -272,7 +452,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         setContainerEditSubmitting(false);
       }
     },
-    [editingContainer, reloadGeometries, containersPanelZone]
+    [reloadGeometries, refreshAdminContainers, containersPanelZone]
   );
 
   const handleDeleteContainer = useCallback(
@@ -287,6 +467,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         setTableMutationError("");
         await deleteContainer(container.id);
         await reloadGeometries();
+        await refreshAdminContainers();
         if (containersPanelZone) {
           setPanelContainers((prev) => prev.filter((c) => c.id !== container.id));
         }
@@ -296,7 +477,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         );
       }
     },
-    [reloadGeometries, containersPanelZone]
+    [reloadGeometries, refreshAdminContainers, containersPanelZone]
   );
 
   const renderContainerCount = (zone: Zone) => {
@@ -557,18 +738,19 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         onCancel={handleCloseZoneDeleteModal}
       />
 
-      <ContainerSerialEditModal
-        container={editingContainer}
-        isOpen={editingContainer !== null}
+      <ContainerFullEditModal
+        values={containerBeingEdited}
+        isOpen={containerBeingEdited !== null}
+        zones={zones}
         isSubmitting={containerEditSubmitting}
         error={containerEditError}
         onClose={() => {
           if (!containerEditSubmitting) {
-            setEditingContainer(null);
+            setContainerBeingEdited(null);
             setContainerEditError(null);
           }
         }}
-        onSave={(serial) => void handleSaveContainerSerial(serial)}
+        onSave={(next) => void handleSaveContainerFull(next)}
       />
 
       <ZoneContainersPanel
@@ -580,7 +762,14 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         onClose={closeContainersPanel}
         onEdit={(container) => {
           setContainerEditError(null);
-          setEditingContainer(container);
+          const draft = containerApiRowToFullEdit(container);
+          if (!draft) {
+            setToastMessage(
+              "Impossible d'ouvrir l'édition : coordonnées GPS ou secteur manquants pour ce conteneur."
+            );
+            return;
+          }
+          setContainerBeingEdited(draft);
         }}
         onDelete={(container) => void handleDeleteContainer(container)}
       />
@@ -617,9 +806,9 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         }}
       >
         <div>
-          <h1 style={{ color: "#0f172a", margin: "0 0 4px" }}>Zones</h1>
+          <h1 style={{ color: "#0f172a", margin: "0 0 4px" }}>Zones &amp; Conteneurs</h1>
           <p style={{ color: "#64748b", margin: 0 }}>
-            Gère les zones de collecte et consulte leur répartition.
+            Carte opérationnelle : secteurs, conteneurs et outils de gestion.
           </p>
           {spatialEditingEnabled ? (
             <ul className="mt-2 max-w-2xl list-disc space-y-1 pl-5 text-sm text-slate-600">
@@ -650,7 +839,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "flex-end" }}>
           {viewerRole === "ADMIN" ? (
             <Link
-              href="/dashboard/zones/nouveau"
+              href="/dashboard/infrastructure/nouveau"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -674,7 +863,47 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
         style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}
       >
-        <h2 className="mb-3 text-base font-semibold text-slate-900">Carte des secteurs</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="m-0 text-base font-semibold text-slate-900">Carte des secteurs</h2>
+          {spatialEditingEnabled ? (
+            <button
+              type="button"
+              onClick={() => {
+                setRelocatingContainer(null);
+                setIsAddingContainer((current) => !current);
+                if (isAddingContainer) {
+                  setDrawerOpen(false);
+                  setPendingCoordinates(null);
+                }
+              }}
+              className={[
+                "rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition",
+                isAddingContainer
+                  ? "bg-slate-800 text-white hover:bg-slate-900"
+                  : "bg-emerald-600 text-white hover:bg-emerald-700",
+              ].join(" ")}
+            >
+              {isAddingContainer ? "Annuler l'ajout" : "Ajouter un conteneur"}
+            </button>
+          ) : null}
+        </div>
+        {relocatingContainer ? (
+          <p className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+            Mode déplacement : cliquez sur la carte pour repositionner « {relocatingContainer.serialNumber} ».
+            <button
+              type="button"
+              className="ml-2 font-semibold underline"
+              onClick={() => setRelocatingContainer(null)}
+            >
+              Annuler
+            </button>
+          </p>
+        ) : null}
+        {isAddingContainer ? (
+          <p className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+            Cliquez sur la carte pour placer le nouveau conteneur.
+          </p>
+        ) : null}
         {mapMutationError ? (
           <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
             {mapMutationError}
@@ -683,12 +912,12 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         {!loading && !error ? (
           <ZoneManagementMap
             initialPolygons={mapPolygons}
-            mapContainers={mapContainers}
             viewerRole={viewerRole}
             spatialEditingEnabled={spatialEditingEnabled}
             mapDrawSessionLocked={mapDrawSessionLocked}
             onMapDrawSessionLockChange={handleMapDrawSessionLockChange}
-            onMapContainerSelect={handleMapContainerSelect}
+            infrastructureOverlay={infrastructureMapOverlay}
+            showContainerLegend
             onPolygonSketchCommitted={handlePolygonSketchCommitted}
             {...(spatialEditingEnabled
               ? {
@@ -786,7 +1015,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
               {viewerRole === "ADMIN" ? (
                 <Link
-                  href="/dashboard/zones/nouveau"
+                  href="/dashboard/infrastructure/nouveau"
                   style={{
                     display: "inline-flex",
                     textDecoration: "none",
@@ -959,6 +1188,25 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
           </>
         )}
       </div>
+
+      {pendingCoordinates ? (
+        <CreateContainerDrawer
+          isOpen={drawerOpen}
+          latitude={pendingCoordinates.latitude}
+          longitude={pendingCoordinates.longitude}
+          suggestedZoneId={pendingCoordinates.suggestedZoneId || null}
+          zoneInferredFromMap={pendingCoordinates.sectorInferredFromMapClick}
+          zones={zones}
+          isSubmitting={createSubmitting}
+          errorMessage={createError}
+          onSubmit={(values) => void handleCreateContainer(values)}
+          onClose={handleCloseCreateDrawer}
+        />
+      ) : null}
+
+      {toastMessage ? (
+        <ReportToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+      ) : null}
 
       <style>{`
         .table-desktop { display: block; }

@@ -2,7 +2,7 @@
 
 import "leaflet/dist/leaflet.css";
 import type { PathOptions } from "leaflet";
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { MapContainer, Polygon, TileLayer } from "react-leaflet";
 import type { Container, Zone } from "@/models/map";
 import type { Role } from "@/models/user";
@@ -41,6 +41,10 @@ export type InteractiveMapProps = {
   zonePathOptions?: PathOptions;
   /** Show a control that flies the map to the user's geolocation. */
   showLocateMe?: boolean;
+  /** Optional layer rendered inside the map (e.g. admin container CRUD) without altering zone polygons. */
+  mapOverlay?: ReactNode;
+  /** When true, default container markers are not rendered (use with mapOverlay). */
+  suppressDefaultContainers?: boolean;
 };
 
 const OPERATIONAL_ZONE_PATH_OPTIONS: PathOptions = {
@@ -75,6 +79,8 @@ export default function InteractiveMap({
   showZones = true,
   zonePathOptions = OPERATIONAL_ZONE_PATH_OPTIONS,
   showLocateMe = true,
+  mapOverlay = null,
+  suppressDefaultContainers = false,
 }: InteractiveMapProps) {
   const handleReportIssue = (containerId: string) => {
     onReportIssue?.(containerId);
@@ -114,16 +120,20 @@ export default function InteractiveMap({
                 </Fragment>
               ))
             : null}
-          {containers.map((container) => (
-            <ContainerMarker
-              container={container}
-              viewerRole={viewerRole}
-              isSelected={selectedContainerId === container.id}
-              onReportIssue={onReportIssue ? handleReportIssue : undefined}
-              onCreateRoute={onCreateRoute ? handleCreateRoute : undefined}
-              onContainerSelect={onContainerSelect}
-            />
-          ))}
+          {mapOverlay}
+          {!suppressDefaultContainers
+            ? containers.map((container) => (
+                <ContainerMarker
+                  key={container.id}
+                  container={container}
+                  viewerRole={viewerRole}
+                  isSelected={selectedContainerId === container.id}
+                  onReportIssue={onReportIssue ? handleReportIssue : undefined}
+                  onCreateRoute={onCreateRoute ? handleCreateRoute : undefined}
+                  onContainerSelect={onContainerSelect}
+                />
+              ))
+            : null}
         </MapContainer>
       </div>
     </div>

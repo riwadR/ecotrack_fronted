@@ -10,7 +10,7 @@ import { accessTokenNeedsRefresh } from "@/lib/jwt-access";
 
 const ROLE_PROTECTED: Record<string, string[]> = {
   "/dashboard/users": ["ADMIN"],
-  "/dashboard/map": ["ADMIN", "MANAGER"],
+  "/dashboard/infrastructure/nouveau": ["ADMIN", "MANAGER"],
 };
 
 export async function middleware(request: NextRequest) {

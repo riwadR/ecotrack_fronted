@@ -164,3 +164,20 @@
 .challenge-join-pulse {
   animation: challenge-join-pulse-keyframes 2s ease-in-out infinite;
 }
+
+/* Admin map — placement mode for new containers */
+.leaflet-container.ecotrack-map--add-container {
+  cursor: crosshair !important;
+}
+
+.leaflet-container.ecotrack-map--add-container .ecotrack-map-marker--draggable {
+  cursor: grab !important;
+}
+
+.leaflet-container.ecotrack-map--relocate-container {
+  cursor: crosshair !important;
+}
+
+.leaflet-container.ecotrack-map--relocate-container .ecotrack-map-marker--draggable {
+  cursor: grab !important;
+}

@@ -9,6 +9,13 @@ const CONTAINER_TYPE_LABELS: Record<ContainerType, string> = {
   GENERAL: "Ordures ménagères",
 };
 
+/** Options ordered for selects (French labels). */
+export const CONTAINER_TYPE_FORM_OPTIONS: Array<{ value: ContainerType; label: string }> =
+  CONTAINER_TYPE_VALUES.map((value) => ({
+    value,
+    label: CONTAINER_TYPE_LABELS[value],
+  }));
+
 export function getContainerTypeLabel(type: string | null | undefined): string {
   if (!type) {
     return "—";

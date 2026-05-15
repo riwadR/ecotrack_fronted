@@ -5,10 +5,10 @@ import { useCallback, useRef } from "react";
 import L from "leaflet";
 import { FeatureGroup, MapContainer, TileLayer } from "react-leaflet";
 import ManagedZonePolygons from "@/components/zones/ManagedZonePolygons";
-import type { Container as MapContainerModel } from "@/models/map";
+import type { ReactNode } from "react";
 import type { Role } from "@/models/user";
-import ContainerMarker from "@/components/map/ContainerMarker";
 import MapResizeBridge from "@/components/map/MapResizeBridge";
+import InfrastructureMapLegend from "@/components/infrastructure/InfrastructureMapLegend";
 import ZoneNameLabel from "@/components/map/ZoneNameLabel";
 import PolygonDrawController, {
   type PersistedPolygonEdit,
@@ -39,7 +39,6 @@ const EXISTING_ZONE_STYLE = {
 
 export type ZoneManagementMapProps = {
   initialPolygons: ZonePolygonLayer[];
-  mapContainers?: MapContainerModel[];
   viewerRole: Role;
   spatialEditingEnabled: boolean;
   mapDrawSessionLocked?: boolean;
@@ -47,7 +46,9 @@ export type ZoneManagementMapProps = {
   onPolygonSketchCommitted: (layer: L.Polygon, discardFromGroup: () => void) => void;
   onPersistedPolygonEditsCommitted?: (edits: PersistedPolygonEdit[]) => Promise<void>;
   onPersistedPolygonDeletesCommitted?: (zoneIds: string[]) => Promise<void>;
-  onMapContainerSelect?: (container: MapContainerModel) => void;
+  /** Container CRUD layer — independent from zone polygons. */
+  infrastructureOverlay?: ReactNode;
+  showContainerLegend?: boolean;
 };
 
 /**
@@ -55,7 +56,6 @@ export type ZoneManagementMapProps = {
  */
 export default function ZoneManagementMap({
   initialPolygons,
-  mapContainers = [],
   viewerRole,
   spatialEditingEnabled,
   mapDrawSessionLocked = false,
@@ -63,7 +63,8 @@ export default function ZoneManagementMap({
   onPolygonSketchCommitted,
   onPersistedPolygonEditsCommitted,
   onPersistedPolygonDeletesCommitted,
-  onMapContainerSelect,
+  infrastructureOverlay = null,
+  showContainerLegend = false,
 }: ZoneManagementMapProps) {
   const editableFeatureGroupRef = useRef<L.FeatureGroup | null>(null);
 
@@ -75,7 +76,8 @@ export default function ZoneManagementMap({
   );
 
   return (
-    <div className="flex h-[min(72vh,620px)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+    <div className="relative flex h-[min(72vh,620px)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+      {showContainerLegend ? <InfrastructureMapLegend /> : null}
       <MapContainer
         center={ZONE_MANAGEMENT_MAP_CENTER}
         zoom={ZONE_MANAGEMENT_MAP_ZOOM}
@@ -95,14 +97,7 @@ export default function ZoneManagementMap({
         {initialPolygons.map((zone) => (
           <ZoneNameLabel key={`label-${zone.id}`} name={zone.name} polygon={zone.positions} />
         ))}
-        {mapContainers.map((container) => (
-          <ContainerMarker
-            key={`${container.id}-${container.fillLevelPercent}`}
-            container={container}
-            viewerRole={viewerRole}
-            onContainerSelect={onMapContainerSelect}
-          />
-        ))}
+        {infrastructureOverlay}
         {spatialEditingEnabled ? (
           <PolygonDrawController
             spatialEditingEnabled={spatialEditingEnabled}

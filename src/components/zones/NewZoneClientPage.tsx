@@ -77,7 +77,7 @@ export default function NewZoneClientPage() {
       setSuccess("Zone créée avec succès.");
 
       setTimeout(() => {
-        router.push("/dashboard/zones");
+        router.push("/dashboard/infrastructure");
       }, 700);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de créer la zone.");
@@ -99,7 +99,7 @@ export default function NewZoneClientPage() {
       >
         <div>
           <p style={{ margin: "0 0 6px", color: "#94a3b8", fontSize: "13px" }}>
-            Zones / Nouvelle zone
+            Zones &amp; Conteneurs / Nouvelle zone
           </p>
           <h1 style={{ margin: "0 0 4px", color: "#0f172a" }}>
             Créer une zone
@@ -110,7 +110,7 @@ export default function NewZoneClientPage() {
         </div>
 
         <Link
-          href="/dashboard/zones"
+          href="/dashboard/infrastructure"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -251,7 +251,7 @@ export default function NewZoneClientPage() {
 
               <button
                 type="button"
-                onClick={() => router.push("/dashboard/zones")}
+                onClick={() => router.push("/dashboard/infrastructure")}
                 style={{
                   background: "#fff",
                   color: "#0f172a",

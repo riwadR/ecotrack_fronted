@@ -4,6 +4,14 @@ import type { Container } from "@/models/container";
 import type { Zone } from "@/models/zone";
 import { containerDisplayName } from "@/lib/zones/zoneContainerUtils";
 import { getContainerTypeLabel } from "@/lib/containers/containerTypeLabels";
+import {
+  BACKEND_CONTAINER_STATUS_OPTIONS,
+  parseBackendContainerStatus,
+} from "@/lib/containers/backendContainerStatus";
+
+const STATUS_LABEL_MAP = Object.fromEntries(
+  BACKEND_CONTAINER_STATUS_OPTIONS.map((o) => [o.value, o.label])
+) as Record<string, string>;
 
 export type ZoneContainersPanelProps = {
   zone: Zone | null;
@@ -81,6 +89,11 @@ export default function ZoneContainersPanel({
                     {containerDisplayName(container)}
                   </p>
                   <p className="m-0 mt-1 text-xs text-slate-600">
+                    Statut :{" "}
+                    {STATUS_LABEL_MAP[parseBackendContainerStatus(container.status)] ??
+                      String(container.status)}
+                  </p>
+                  <p className="m-0 mt-1 text-xs text-slate-600">
                     Type : {getContainerTypeLabel(container.type ?? container.wasteType)}
                     {container.fillLevel != null ? ` · ${container.fillLevel} %` : ""}
                   </p>
@@ -91,7 +104,7 @@ export default function ZoneContainersPanel({
                         className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
                         onClick={() => onEdit(container)}
                       >
-                        Renommer
+                        Modifier
                       </button>
                       <button
                         type="button"
