@@ -38,7 +38,7 @@ export function setAuthCookiesOnResponse(
   response: NextResponse,
   accessToken: string,
   refreshToken: string,
-  session: { email: string; name: string; username?: string; role: string }
+  session: { email: string; name: string; username?: string; role: string; id?: string }
 ): void {
   const { secure, sameSite } = authCookieFlags();
   const base = { httpOnly: true, secure, sameSite, path: "/" } as const;

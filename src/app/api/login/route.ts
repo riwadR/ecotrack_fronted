@@ -45,6 +45,7 @@ export async function POST(request: Request) {
   }
 
   const profile = (await profileRes.json()) as {
+    id?: string;
     email: string;
     username?: string;
     firstName?: string;
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
     fallback: "Utilisateur",
   });
   const sessionUser = {
+    id: profile.id ?? "",
     email: profile.email,
     name: username,
     username,

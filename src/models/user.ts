@@ -7,4 +7,6 @@ export type User = {
   lastName: string;
   email: string;
   role: Role;
+  accountLocked: boolean;
+  receivesAlerts: boolean;
 };

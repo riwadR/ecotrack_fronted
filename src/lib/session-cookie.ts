@@ -4,6 +4,7 @@ export function encodeSessionPayload(session: {
   name: string;
   username?: string;
   role: string;
+  id?: string;
 }): string {
   const json = JSON.stringify(session);
   const bytes = new TextEncoder().encode(json);

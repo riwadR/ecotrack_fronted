@@ -9,7 +9,7 @@ import { backendFetchMe, backendRefreshAndSessionUser } from "@/lib/backend-auth
 import { accessTokenNeedsRefresh } from "@/lib/jwt-access";
 
 const ROLE_PROTECTED: Record<string, string[]> = {
-  "/dashboard/users": ["ADMIN"],
+  "/dashboard/admin": ["ADMIN"],
   "/dashboard/infrastructure/nouveau": ["ADMIN", "MANAGER"],
 };
 

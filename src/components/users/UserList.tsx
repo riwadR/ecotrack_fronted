@@ -4,6 +4,7 @@ import type { Role, User } from "@/models/user";
 
 type UserListProps = {
   users: User[];
+  onEditUser: (user: User) => void;
 };
 
 const ROLE_LABEL_FR: Record<Role, string> = {
@@ -13,28 +14,43 @@ const ROLE_LABEL_FR: Record<Role, string> = {
   CITIZEN: "Citoyen",
 };
 
-export function UserList({ users }: UserListProps) {
+function StatusPill({ accountLocked }: { accountLocked: boolean }) {
+  if (accountLocked) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/20">
+        <span className="size-1.5 rounded-full bg-slate-500" aria-hidden />
+        Compte verrouillé
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+      <span className="size-1.5 rounded-full bg-green-600" aria-hidden />
+      Actif
+    </span>
+  );
+}
+
+const thClass =
+  "px-4 py-2.5 lg:py-4 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400";
+
+const tdClass =
+  "border-b border-slate-100 px-4 py-3 lg:py-4 align-middle transition-colors group-hover:bg-slate-50/80";
+
+export default function UserList({ users, onEditUser }: UserListProps) {
   if (users.length === 0) {
     return (
       <div className="py-12 text-center text-slate-400">
-        <p className="m-0 text-[40px] leading-none mb-3">👤</p>
+        <p className="m-0 mb-3 text-[40px] leading-none">👤</p>
         <p className="m-0 font-semibold text-slate-500">Aucun utilisateur</p>
-        <p className="mt-1 text-sm">
-          Les utilisateurs apparaîtront ici une fois l&apos;API connectée.
-        </p>
+        <p className="mt-1 text-sm">Les utilisateurs apparaîtront ici une fois l&apos;API connectée.</p>
       </div>
     );
   }
 
-  const thClass =
-    "px-4 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400";
-
-  const tdRowClass =
-    "border-b border-slate-100 px-4 py-3 align-middle transition-colors hover:bg-slate-50/80";
-
   return (
     <div className="min-w-0">
-      <div className="hidden lg:block overflow-x-auto">
+      <div className="hidden overflow-x-auto lg:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200">
@@ -44,21 +60,29 @@ export function UserList({ users }: UserListProps) {
               <th className={thClass}>Email</th>
               <th className={thClass}>Rôle</th>
               <th className={thClass}>Statut</th>
+              <th className={thClass}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id} className={tdRowClass}>
-                <td className="font-semibold text-slate-900">{user.username || "—"}</td>
-                <td className="text-slate-900">{user.firstName || "—"}</td>
-                <td className="text-slate-900">{user.lastName || "—"}</td>
-                <td className="text-slate-500">{user.email}</td>
-                <td className="text-slate-900">{ROLE_LABEL_FR[user.role] ?? user.role}</td>
-                <td>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
-                    <span className="size-1.5 rounded-full bg-green-600" aria-hidden />
-                    Actif
-                  </span>
+              <tr key={user.id} className="group">
+                <td className={`${tdClass} font-semibold text-slate-900`}>{user.username || "—"}</td>
+                <td className={`${tdClass} text-slate-900`}>{user.firstName || "—"}</td>
+                <td className={`${tdClass} text-slate-900`}>{user.lastName || "—"}</td>
+                <td className={`${tdClass} text-slate-500`}>{user.email}</td>
+                <td className={`${tdClass} text-slate-900`}>{ROLE_LABEL_FR[user.role] ?? user.role}</td>
+                <td className={tdClass}>
+                  <StatusPill accountLocked={user.accountLocked} />
+                </td>
+                <td className={tdClass}>
+                  <button
+                    type="button"
+                    onClick={() => onEditUser(user)}
+                    className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                    aria-label={`Éditer l’utilisateur ${user.username || user.email}`}
+                  >
+                    Éditer
+                  </button>
                 </td>
               </tr>
             ))}
@@ -80,13 +104,18 @@ export function UserList({ users }: UserListProps) {
               <MobileField label="Rôle" value={ROLE_LABEL_FR[user.role] ?? user.role} />
               <MobileField
                 label="Statut"
-                value={
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
-                    <span className="size-1.5 rounded-full bg-green-600" aria-hidden />
-                    Actif
-                  </span>
-                }
+                value={<StatusPill accountLocked={user.accountLocked} />}
               />
+            </div>
+            <div className="mt-3 flex justify-end border-t border-slate-100 pt-3">
+              <button
+                type="button"
+                onClick={() => onEditUser(user)}
+                aria-label={`Éditer l’utilisateur ${user.username || user.email}`}
+                className="w-full rounded-lg border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 sm:w-auto sm:px-5"
+              >
+                Éditer
+              </button>
             </div>
           </li>
         ))}

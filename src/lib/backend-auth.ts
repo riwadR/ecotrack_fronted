@@ -10,6 +10,7 @@ type BackendAuthResponse = {
 };
 
 type UserProfileMe = {
+  id?: string;
   email: string;
   username?: string;
   firstName?: string;
@@ -26,6 +27,7 @@ function buildSessionUser(profile: UserProfileMe): SessionUser {
   });
 
   return {
+    id: profile.id ?? "",
     email,
     name: username,
     username,

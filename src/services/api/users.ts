@@ -9,6 +9,8 @@ type UsersApiRecord = {
   firstName?: string;
   lastName?: string;
   role: User["role"];
+  accountLocked?: boolean;
+  receivesAlerts?: boolean;
 };
 
 function mapUsersApiRecords(records: UsersApiRecord[]): User[] {
@@ -16,6 +18,8 @@ function mapUsersApiRecords(records: UsersApiRecord[]): User[] {
     id: u.id,
     email: u.email,
     role: u.role,
+    accountLocked: u.accountLocked ?? false,
+    receivesAlerts: u.receivesAlerts ?? false,
     username: resolvePublicUsername({
       username: u.username,
       email: u.email,

@@ -4,6 +4,7 @@ import { Role } from "@/models/user";
 import { backendFetchMe } from "@/lib/backend-auth";
 
 export type SessionUser = {
+  id: string;
   email: string;
   /** Public display label (username, or email fallback). */
   name: string;
