@@ -257,3 +257,31 @@
     border-radius: 9999px;
   }
 }
+
+/* Embedded maps (tour workspace): compact icon-only locate control */
+.ecotrack-locate-control--compact {
+  gap: 0;
+  justify-content: center;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 8px;
+  font-size: 0;
+  border-radius: 9999px;
+  box-shadow:
+    0 2px 8px rgba(22, 163, 74, 0.35),
+    0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.ecotrack-locate-control--compact .ecotrack-locate-control__label {
+  display: none;
+}
+
+.ecotrack-locate-control--compact .ecotrack-locate-control__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.ecotrack-locate-control--compact .ecotrack-locate-control__icon svg {
+  width: 18px;
+  height: 18px;
+}

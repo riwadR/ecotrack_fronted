@@ -31,6 +31,8 @@ export type InteractiveMapProps = {
   operationalNotice?: string | null;
   /** When set, highlights the matching marker (e.g. list selection). */
   selectedContainerId?: string | null;
+  /** When set, highlights every marker whose id is in the set (takes precedence over `selectedContainerId`). */
+  selectedContainerIds?: ReadonlySet<string> | null;
   /** Parent handler for “Signaler un problème” from marker popups. */
   onReportIssue?: (containerId: string) => void;
   /** Parent handler when a marker is opened or clicked. */
@@ -42,10 +44,17 @@ export type InteractiveMapProps = {
   zonePathOptions?: PathOptions;
   /** Show a control that flies the map to the user's geolocation. */
   showLocateMe?: boolean;
+  /** Smaller icon-only locate control (embedded maps). */
+  compactLocateMe?: boolean;
   /** Optional layer rendered inside the map (e.g. admin container CRUD) without altering zone polygons. */
   mapOverlay?: ReactNode;
   /** When true, default container markers are not rendered (use with mapOverlay). */
   suppressDefaultContainers?: boolean;
+  /**
+   * Fills the parent height (tour workspace). Skips default citizen viewport heights
+   * so Leaflet can size correctly inside flex layouts.
+   */
+  fillContainer?: boolean;
 };
 
 const OPERATIONAL_ZONE_PATH_OPTIONS: PathOptions = {
@@ -75,14 +84,17 @@ export default function InteractiveMap({
   className,
   operationalNotice = null,
   selectedContainerId = null,
+  selectedContainerIds = null,
   onReportIssue,
   onContainerSelect,
   onCreateRoute,
   showZones = true,
   zonePathOptions = OPERATIONAL_ZONE_PATH_OPTIONS,
   showLocateMe = true,
+  compactLocateMe = false,
   mapOverlay = null,
   suppressDefaultContainers = false,
+  fillContainer = false,
 }: InteractiveMapProps) {
   const handleReportIssue = (containerId: string) => {
     onReportIssue?.(containerId);
@@ -92,14 +104,23 @@ export default function InteractiveMap({
     onCreateRoute?.(containerId);
   };
 
+  const mapFrameClass = fillContainer
+    ? [
+        "relative z-0 h-full min-h-0 w-full overflow-hidden rounded-xl touch-manipulation",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : [MAP_FRAME_CLASS_CITIZEN, className].filter(Boolean).join(" ");
+
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      className={fillContainer ? "flex h-full min-h-0 w-full flex-col" : "flex flex-col gap-2"}
+    >
       {operationalNotice ? (
         <p className="m-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">{operationalNotice}</p>
       ) : null}
-      <div
-        className={[MAP_FRAME_CLASS_CITIZEN, className].filter(Boolean).join(" ")}
-      >
+      <div className={mapFrameClass}>
         <MapContainer
           center={center}
           zoom={zoom}
@@ -111,7 +132,7 @@ export default function InteractiveMap({
           scrollWheelZoom
         >
           <MapResizeBridge />
-          {showLocateMe ? <LocateMeControl /> : null}
+          {showLocateMe ? <LocateMeControl compact={compactLocateMe} /> : null}
           <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
           {showZones
             ? zones.map((zone) => (
@@ -131,7 +152,11 @@ export default function InteractiveMap({
                   key={container.id}
                   container={container}
                   viewerRole={viewerRole}
-                  isSelected={selectedContainerId === container.id}
+                  isSelected={
+                    selectedContainerIds
+                      ? selectedContainerIds.has(container.id)
+                      : selectedContainerId === container.id
+                  }
                   onReportIssue={onReportIssue ? handleReportIssue : undefined}
                   onCreateRoute={onCreateRoute ? handleCreateRoute : undefined}
                   onContainerSelect={onContainerSelect}

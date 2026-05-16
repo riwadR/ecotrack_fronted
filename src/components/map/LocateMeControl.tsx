@@ -12,10 +12,15 @@ const LOCATE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24
   <circle cx="12" cy="12" r="8"/>
 </svg>`;
 
+export type LocateMeControlProps = {
+  /** Icon-only, smaller control for embedded maps (e.g. tour workspace). */
+  compact?: boolean;
+};
+
 /**
  * Leaflet control that pans/zooms to the user's position via the Geolocation API.
  */
-export default function LocateMeControl() {
+export default function LocateMeControl({ compact = false }: LocateMeControlProps) {
   const map = useMap();
   const controlRef = useRef<L.Control | null>(null);
 
@@ -24,7 +29,10 @@ export default function LocateMeControl() {
       onAdd() {
         const wrapper = L.DomUtil.create("div", "leaflet-control ecotrack-locate-wrapper");
 
-        const button = L.DomUtil.create("button", "ecotrack-locate-control") as HTMLButtonElement;
+        const buttonClasses = compact
+          ? "ecotrack-locate-control ecotrack-locate-control--compact"
+          : "ecotrack-locate-control";
+        const button = L.DomUtil.create("button", buttonClasses) as HTMLButtonElement;
         button.type = "button";
         button.title = "Me localiser";
         button.setAttribute("aria-label", "Me localiser sur la carte");
@@ -73,7 +81,7 @@ export default function LocateMeControl() {
       control.remove();
       controlRef.current = null;
     };
-  }, [map]);
+  }, [compact, map]);
 
   return null;
 }
