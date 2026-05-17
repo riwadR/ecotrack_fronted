@@ -25,6 +25,30 @@ export type CreateReportInput = {
   imageFile?: File | null;
 };
 
+export type PdfExportModuleFlags = {
+  includeLogistics?: boolean;
+  includeIot?: boolean;
+  includeGamification?: boolean;
+};
+
+export type PdfExportParams = PdfExportModuleFlags & {
+  startDate?: string;
+  endDate?: string;
+};
+
+export type PdfExportResult = {
+  blob: Blob;
+  filename: string;
+};
+
+function buildModuleParams(flags?: PdfExportModuleFlags): Record<string, string> {
+  return {
+    includeLogistics: String(flags?.includeLogistics ?? true),
+    includeIot: String(flags?.includeIot ?? true),
+    includeGamification: String(flags?.includeGamification ?? true),
+  };
+}
+
 export async function createReport(input: CreateReportInput): Promise<ReportResponse> {
   const formData = new FormData();
   const reportJson = JSON.stringify({
@@ -98,29 +122,23 @@ export async function updateReportStatus(
   }
 }
 
-export type PdfExportResult = {
-  blob: Blob;
-  filename: string;
-};
-
 /**
  * Downloads the UC-G03 consolidated activity report as a PDF blob and resolved filename.
  */
-export async function exportPdfReport(
-  startDate?: string,
-  endDate?: string
-): Promise<PdfExportResult> {
+export async function exportPdfReport(params?: PdfExportParams): Promise<PdfExportResult> {
   try {
-    const params: Record<string, string> = {};
-    if (startDate) {
-      params.startDate = startDate;
+    const query: Record<string, string> = {
+      ...buildModuleParams(params),
+    };
+    if (params?.startDate) {
+      query.startDate = params.startDate;
     }
-    if (endDate) {
-      params.endDate = endDate;
+    if (params?.endDate) {
+      query.endDate = params.endDate;
     }
 
     const response = await backendApiClient.get<Blob>("reports/export-pdf", {
-      params,
+      params: query,
       responseType: "blob",
       headers: { Accept: "application/pdf" },
     });
@@ -129,10 +147,28 @@ export async function exportPdfReport(
       response.headers["content-disposition"]
     );
     const filename =
-      headerFilename ?? buildPdfExportFilename(startDate, endDate);
+      headerFilename ??
+      buildPdfExportFilename(params?.startDate, params?.endDate);
 
     return { blob: response.data, filename };
   } catch (error) {
     throw toApiError(error, "Impossible de générer le rapport PDF.");
+  }
+}
+
+/**
+ * Generates the UC-G03 PDF on the server and emails it to the authenticated user.
+ */
+export async function sendPdfReportByEmail(params?: PdfExportParams): Promise<void> {
+  try {
+    await backendApiClient.post("reports/send-email", {
+      startDate: params?.startDate,
+      endDate: params?.endDate,
+      includeLogistics: params?.includeLogistics ?? true,
+      includeIot: params?.includeIot ?? true,
+      includeGamification: params?.includeGamification ?? true,
+    });
+  } catch (error) {
+    throw toApiError(error, "Impossible d'envoyer le rapport par e-mail.");
   }
 }
