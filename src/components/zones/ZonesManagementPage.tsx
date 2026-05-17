@@ -18,6 +18,7 @@ import {
   getZoneDeletionPreview,
   getZones,
   patchZoneDetails,
+  resolveZoneDeleteErrorMessage,
   updateZone,
 } from "@/services/api/zones";
 import type { ZoneDeletionPreview } from "@/services/api/zones";
@@ -110,6 +111,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   const [zoneDeletePreviewLoading, setZoneDeletePreviewLoading] = useState(false);
   const [zoneDeletePreviewError, setZoneDeletePreviewError] = useState<string | null>(null);
   const [zoneDeleteSubmitting, setZoneDeleteSubmitting] = useState(false);
+  const [zoneDeleteSubmitError, setZoneDeleteSubmitError] = useState<string | null>(null);
 
   const [isAddingContainer, setIsAddingContainer] = useState(false);
   const [relocatingContainer, setRelocatingContainer] = useState<AdminMapContainer | null>(null);
@@ -705,6 +707,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     setZoneToDelete(zone);
     setZoneDeletePreview(null);
     setZoneDeletePreviewError(null);
+    setZoneDeleteSubmitError(null);
     setZoneDeletePreviewLoading(true);
     void getZoneDeletionPreview(zone.id)
       .then((preview) => {
@@ -727,6 +730,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     setZoneToDelete(null);
     setZoneDeletePreview(null);
     setZoneDeletePreviewError(null);
+    setZoneDeleteSubmitError(null);
   }, [zoneDeleteSubmitting]);
 
   const handleConfirmZoneDelete = useCallback(async () => {
@@ -735,12 +739,14 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
     }
     const cascade =
       zoneDeletePreview !== null &&
-      (zoneDeletePreview.challengeCount > 0 ||
+      (zoneDeletePreview.affectedChallengesCount > 0 ||
+        zoneDeletePreview.affectedToursCount > 0 ||
         zoneDeletePreview.containerCount > 0 ||
         zoneDeletePreview.reportCount > 0);
 
     try {
       setTableMutationError("");
+      setZoneDeleteSubmitError(null);
       setZoneDeleteSubmitting(true);
       await deleteZone(zoneToDelete.id, { cascade });
       removeZoneFromState(zoneToDelete.id);
@@ -748,9 +754,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
       setZoneDeletePreview(null);
       await reloadGeometries();
     } catch (err) {
-      setTableMutationError(
-        err instanceof Error ? err.message : "Impossible de supprimer la zone."
-      );
+      setZoneDeleteSubmitError(resolveZoneDeleteErrorMessage(err));
     } finally {
       setZoneDeleteSubmitting(false);
     }
@@ -764,6 +768,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         isLoadingPreview={zoneDeletePreviewLoading}
         isDeleting={zoneDeleteSubmitting}
         previewError={zoneDeletePreviewError}
+        submitError={zoneDeleteSubmitError}
         onConfirmCascade={handleConfirmZoneDelete}
         onCancel={handleCloseZoneDeleteModal}
       />

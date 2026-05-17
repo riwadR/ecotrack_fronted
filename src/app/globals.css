@@ -6,6 +6,31 @@
   border: none !important;
 }
 
+/* Tour itinerary — numbered step markers (separate from planning / citizen pins) */
+.ecotrack-tour-step-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background-color: #059669;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.35);
+}
+
+.ecotrack-tour-step-marker--next {
+  background-color: #dc2626;
+  color: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(252, 165, 165, 0.9),
+    0 2px 8px rgba(220, 38, 38, 0.45);
+}
+
 /*
  * Tailwind Preflight sets `img { max-width: 100%; }`, which distorts Leaflet
  * control sprites (draw toolbar + default controls). Reset for map UI only.
@@ -284,4 +309,121 @@
 .ecotrack-locate-control--compact .ecotrack-locate-control__icon svg {
   width: 18px;
   height: 18px;
+}
+
+/* Circular GPS locate button (all maps) */
+.ecotrack-locate-control--round {
+  gap: 0;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px;
+  border-radius: 9999px;
+  border: 2px solid #3b82f6;
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow:
+    0 2px 10px rgba(37, 99, 235, 0.28),
+    0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.ecotrack-locate-control--round:hover:not(:disabled) {
+  background: #eff6ff;
+  filter: none;
+}
+
+.ecotrack-locate-control--round.ecotrack-locate-control--active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+.ecotrack-locate-control--round .ecotrack-locate-control__label {
+  display: none;
+}
+
+/* User GPS dot + accuracy halo */
+.ecotrack-user-location-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.ecotrack-user-location-marker__dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+}
+
+.ecotrack-user-location-marker__pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.35);
+  animation: ecotrack-user-location-pulse 2s ease-out infinite;
+}
+
+@keyframes ecotrack-user-location-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* Live agent marker (manager itinerary) */
+.ecotrack-live-agent-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.ecotrack-live-agent-marker__pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  font-size: 18px;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.45);
+}
+
+.ecotrack-live-agent-marker__label {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 4px);
+  max-width: 120px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }

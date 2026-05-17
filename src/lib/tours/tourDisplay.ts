@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { TourResponseDTO, TourStatus } from "@/models/tour";
+import type { StepStatus, TourResponseDTO, TourStatus } from "@/models/tour";
 
 export type TourFilterId = "all" | "completed" | "in_progress" | "pending";
 
@@ -19,6 +19,12 @@ export const TOUR_STATUS_LABELS: Record<TourStatus, string> = {
   IN_PROGRESS: "En cours",
   COMPLETED: "Terminée",
   CANCELLED: "Annulée",
+};
+
+export const STEP_STATUS_LABELS: Record<StepStatus, string> = {
+  PENDING: "À collecter",
+  COMPLETED: "Terminée",
+  SKIPPED: "Ignorée",
 };
 
 export const TOUR_STATUS_STYLES: Record<TourStatus, { bg: string; color: string }> = {
@@ -50,6 +56,13 @@ export function formatTourSchedule(startTime: string, endTime: string): string {
   return `${formatter.format(new Date(startTime))} → ${formatter.format(new Date(endTime))}`;
 }
 
+export function formatTourZones(tour: TourResponseDTO): string {
+  if (!tour.zones?.length) {
+    return tour.zone?.name ?? "—";
+  }
+  return tour.zones.map((zone) => zone.name).join(", ");
+}
+
 export function formatTourAgents(tour: TourResponseDTO): string {
   if (!tour.agents.length) {
     return "—";
@@ -64,12 +77,21 @@ export function formatTourDistance(km: number | null): string {
   return `${km.toFixed(1)} km`;
 }
 
+/** Formats estimated duration: under 60 min as "45 min", otherwise "1h06", "10h20". */
 export function formatTourDuration(minutes: number | null): string {
   if (minutes == null) {
     return "—";
   }
-  return `${minutes} min`;
+  const total = Math.max(0, Math.round(minutes));
+  if (total < 60) {
+    return `${total} min`;
+  }
+  const hours = Math.floor(total / 60);
+  const remainder = total % 60;
+  return `${hours}h${String(remainder).padStart(2, "0")}`;
 }
+
+export { TOUR_ESTIMATED_DURATION_HINT } from "@/lib/tours/tourStartWindow";
 
 export function shortTourId(id: string): string {
   return id.slice(0, 8).toUpperCase();

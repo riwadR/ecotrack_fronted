@@ -8,7 +8,7 @@ import type { Container, Zone } from "@/models/map";
 import type { Role } from "@/models/user";
 import { MAP_FRAME_CLASS_CITIZEN } from "@/lib/map/mapShellLayout";
 import ContainerMarker from "./ContainerMarker";
-import LocateMeControl from "./LocateMeControl";
+import MapLocateMeKit from "./MapLocateMeKit";
 import MapResizeBridge from "./MapResizeBridge";
 import ZoneNameLabel from "./ZoneNameLabel";
 
@@ -132,7 +132,7 @@ export default function InteractiveMap({
           scrollWheelZoom
         >
           <MapResizeBridge />
-          {showLocateMe ? <LocateMeControl compact={compactLocateMe} /> : null}
+          {showLocateMe ? <MapLocateMeKit compact={compactLocateMe} /> : null}
           <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
           {showZones
             ? zones.map((zone) => (

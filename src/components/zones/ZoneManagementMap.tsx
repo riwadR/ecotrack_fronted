@@ -8,6 +8,7 @@ import { MAP_FRAME_CLASS_ADMIN } from "@/lib/map/mapShellLayout";
 import ManagedZonePolygons from "@/components/zones/ManagedZonePolygons";
 import type { ReactNode } from "react";
 import type { Role } from "@/models/user";
+import MapLocateMeKit from "@/components/map/MapLocateMeKit";
 import MapResizeBridge from "@/components/map/MapResizeBridge";
 import InfrastructureMapLegend from "@/components/infrastructure/InfrastructureMapLegend";
 import ZoneNameLabel from "@/components/map/ZoneNameLabel";
@@ -91,6 +92,7 @@ export default function ZoneManagementMap({
         scrollWheelZoom
       >
         <MapResizeBridge />
+        <MapLocateMeKit compact />
         <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} />
         <FeatureGroup ref={editableFeatureGroupRef}>
           <ManagedZonePolygons

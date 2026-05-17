@@ -9,6 +9,13 @@ const CONTAINER_TYPE_LABELS: Record<ContainerType, string> = {
   GENERAL: "Ordures ménagères",
 };
 
+const CONTAINER_TYPE_SHORT_LABELS: Record<ContainerType, string> = {
+  GLASS: "Verre",
+  PLASTIC: "Plastique",
+  PAPER: "Papier",
+  GENERAL: "Général",
+};
+
 /** Options ordered for selects (French labels). */
 export const CONTAINER_TYPE_FORM_OPTIONS: Array<{ value: ContainerType; label: string }> =
   CONTAINER_TYPE_VALUES.map((value) => ({
@@ -22,6 +29,10 @@ export function getContainerTypeLabel(type: string | null | undefined): string {
   }
   const key = type.toUpperCase() as ContainerType;
   return CONTAINER_TYPE_LABELS[key] ?? type;
+}
+
+export function getContainerTypeShortLabel(type: ContainerType): string {
+  return CONTAINER_TYPE_SHORT_LABELS[type];
 }
 
 export function resolveContainerType(

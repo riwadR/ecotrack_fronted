@@ -12,10 +12,9 @@ export const TOUR_PLANNING_ZONE_PATH_OPTIONS: PathOptions = {
 export const TOUR_PLANNING_MAP_FRAME_CLASS =
   "relative z-0 block h-[50vh] min-h-[300px] w-full overflow-hidden rounded-xl touch-manipulation lg:h-full lg:min-h-[280px]";
 
-export type TourPlanningMode = "automatic" | "manual";
-
 export type SelectedTourContainer = {
   id: string;
   serialNumber: string;
   zoneId?: string;
+  zoneName?: string;
 };

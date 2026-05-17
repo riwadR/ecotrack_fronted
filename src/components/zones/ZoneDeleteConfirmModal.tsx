@@ -17,9 +17,18 @@ export type ZoneDeleteConfirmModalProps = {
   isLoadingPreview: boolean;
   isDeleting: boolean;
   previewError: string | null;
+  submitError: string | null;
   onConfirmCascade: () => void | Promise<void>;
   onCancel: () => void;
 };
+
+function SectionHeader({ children }: { children: string }) {
+  return (
+    <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      {children}
+    </p>
+  );
+}
 
 export default function ZoneDeleteConfirmModal({
   isOpen,
@@ -27,6 +36,7 @@ export default function ZoneDeleteConfirmModal({
   isLoadingPreview,
   isDeleting,
   previewError,
+  submitError,
   onConfirmCascade,
   onCancel,
 }: ZoneDeleteConfirmModalProps) {
@@ -37,7 +47,8 @@ export default function ZoneDeleteConfirmModal({
   const zoneLabel = preview?.zoneName ?? "cette zone";
   const hasLinkedData =
     preview !== null &&
-    (preview.challengeCount > 0 ||
+    (preview.affectedChallengesCount > 0 ||
+      preview.affectedToursCount > 0 ||
       preview.containerCount > 0 ||
       preview.reportCount > 0);
 
@@ -52,16 +63,16 @@ export default function ZoneDeleteConfirmModal({
       }}
     >
       <div
-        className={`${APP_MODAL_PANEL_CLASS} max-h-[min(92dvh,44rem)]`}
+        className={`${APP_MODAL_PANEL_CLASS} flex max-h-[min(92dvh,44rem)] flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className={APP_MODAL_HEADER_CLASS}>
+        <header className={`${APP_MODAL_HEADER_CLASS} shrink-0`}>
           <h2 id="zone-delete-title" className={APP_MODAL_TITLE_CLASS}>
             Supprimer la zone « {zoneLabel} » ?
           </h2>
         </header>
 
-        <div className={`${APP_MODAL_BODY_CLASS} text-xs sm:text-sm`}>
+        <div className={`${APP_MODAL_BODY_CLASS} min-h-0 flex-1 overflow-hidden text-xs sm:text-sm`}>
           {isLoadingPreview ? (
             <p className="m-0 text-slate-600">Analyse des éléments liés…</p>
           ) : null}
@@ -72,10 +83,19 @@ export default function ZoneDeleteConfirmModal({
             </p>
           ) : null}
 
+          {submitError ? (
+            <p
+              className="m-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-medium text-red-800"
+              role="alert"
+            >
+              {submitError}
+            </p>
+          ) : null}
+
           {!isLoadingPreview && preview && !hasLinkedData ? (
             <p className="m-0 text-slate-600">
-              Aucun défi, conteneur ni signalement n&apos;est rattaché à cette zone. La suppression
-              est définitive.
+              Aucun défi, tournée, conteneur ni signalement n&apos;est rattaché à cette zone. La
+              suppression est définitive.
             </p>
           ) : null}
 
@@ -87,16 +107,22 @@ export default function ZoneDeleteConfirmModal({
               </p>
 
               <ul className="m-0 grid gap-2 p-0 text-slate-700">
-                {preview.challengeCount > 0 ? (
-                  <li>
-                    <span className="font-semibold">{preview.challengeCount}</span> défi
-                    {preview.challengeCount > 1 ? "s" : ""}
-                  </li>
-                ) : null}
                 {preview.containerCount > 0 ? (
                   <li>
                     <span className="font-semibold">{preview.containerCount}</span> conteneur
                     {preview.containerCount > 1 ? "s" : ""}
+                  </li>
+                ) : null}
+                {preview.affectedChallengesCount > 0 ? (
+                  <li>
+                    <span className="font-semibold">{preview.affectedChallengesCount}</span> défi
+                    {preview.affectedChallengesCount > 1 ? "s" : ""}
+                  </li>
+                ) : null}
+                {preview.affectedToursCount > 0 ? (
+                  <li>
+                    <span className="font-semibold">{preview.affectedToursCount}</span> tournée
+                    {preview.affectedToursCount > 1 ? "s" : ""}
                   </li>
                 ) : null}
                 {preview.reportCount > 0 ? (
@@ -107,34 +133,53 @@ export default function ZoneDeleteConfirmModal({
                 ) : null}
               </ul>
 
-              {preview.challenges.length > 0 ? (
-                <div>
-                  <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Défis concernés
-                  </p>
-                  <ul className="mt-1 max-h-28 list-none overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
-                    {preview.challenges.map((item) => (
-                      <li key={item.id}>{item.title}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+              <div className="max-h-[50vh] space-y-6 overflow-y-auto pr-2">
+                {preview.containers.length > 0 ? (
+                  <section>
+                    <SectionHeader>Conteneurs concernés</SectionHeader>
+                    <ul className="mt-2 list-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+                      {preview.containers.map((item) => (
+                        <li key={item.id} className="py-1">
+                          {item.serialNumber}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
 
-              {preview.containers.length > 0 ? (
-                <div>
-                  <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Conteneurs concernés
-                  </p>
-                  <ul className="mt-1 max-h-28 list-none overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
-                    {preview.containers.map((item) => (
-                      <li key={item.id}>{item.serialNumber}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+                {preview.affectedChallengesCount > 0 ? (
+                  <section>
+                    <SectionHeader>Défis concernés</SectionHeader>
+                    <ul className="mt-2 list-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+                      {preview.affectedChallenges.map((item) => (
+                        <li key={item.id} className="py-1">
+                          {item.title}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+
+                {preview.affectedToursCount > 0 ? (
+                  <section>
+                    <SectionHeader>Tournées concernées</SectionHeader>
+                    <ul className="mt-2 list-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+                      {preview.affectedTours.map((item) => (
+                        <li key={item.id} className="py-1">
+                          {item.descriptor}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+              </div>
 
               <p className="m-0 text-slate-600">
-                Retirez d&apos;abord les objets référencés via la page{" "}
+                Retirez d&apos;abord les objets référencés via{" "}
+                <Link href="/dashboard/collectes" className="font-semibold text-emerald-700 underline">
+                  Collectes
+                </Link>
+                , la page{" "}
                 <Link href="/dashboard/challenges" className="font-semibold text-emerald-700 underline">
                   Défis
                 </Link>{" "}
@@ -144,7 +189,7 @@ export default function ZoneDeleteConfirmModal({
           ) : null}
         </div>
 
-        <footer className={APP_MODAL_FOOTER_CLASS}>
+        <footer className={`${APP_MODAL_FOOTER_CLASS} shrink-0`}>
           <button
             type="button"
             disabled={isDeleting}

@@ -30,7 +30,10 @@ export type TourZoneRef = {
  * Assigned collection agent on a tour (`TourAgentDTO` on the backend).
  * Uses {@link User} fields available on the wire (`id`, public `username` pseudonym).
  */
-export type TourAgent = Pick<User, "id" | "username">;
+export type TourAgent = Pick<User, "id" | "username"> & {
+  currentLatitude?: number | null;
+  currentLongitude?: number | null;
+};
 
 /** Mirrors backend `TourStepDTO`. */
 export type TourStepDTO = {
@@ -42,28 +45,36 @@ export type TourStepDTO = {
   longitude: number | null;
   status: StepStatus;
   completedAt: string | null;
+  collectedVolume?: number | null;
 };
 
-/** Mirrors backend `TourResponseDTO` (zone normalized to a partial object). */
+/** Mirrors backend `TourResponseDTO` (zones normalized from wire lists). */
 export type TourResponseDTO = {
   id: string;
+  /** Primary zone (first in list) for compact displays. */
   zone: TourZoneRef;
+  zones: TourZoneRef[];
   startTime: string;
   endTime: string;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
   status: TourStatus;
   totalDistanceKm: number | null;
   estimatedDurationMinutes: number | null;
   containerTypes: ContainerType[];
+  exceededScheduledTime?: boolean | null;
+  anomaliesReportedCount?: number | null;
   createdAt: string | null;
   agents: TourAgent[];
   steps: TourStepDTO[];
   /** Populated on list responses when `steps` is omitted. */
   stepCount?: number;
+  skippedStepsCount?: number;
 };
 
 /** Mirrors backend `TourCreateRequestDTO`. */
 export type TourCreateRequestDTO = {
-  zoneId: string;
+  zoneIds: string[];
   startTime: string;
   endTime: string;
   agentIds: string[];
@@ -72,13 +83,24 @@ export type TourCreateRequestDTO = {
   containerTypes?: ContainerType[];
   /** Manual map selection — when non-empty, zone fill/type filters are skipped on the backend. */
   explicitContainerIds?: string[];
+  skipOptimization?: boolean;
 };
 
 /** Mirrors backend `TourUpdateRequestDTO` (partial update). */
 export type TourUpdateRequestDTO = {
+  zoneIds?: string[];
   startTime?: string;
   endTime?: string;
   agentIds?: string[];
+  minFillLevel?: number;
+  containerTypes?: ContainerType[];
+  explicitContainerIds?: string[];
+  skipOptimization?: boolean;
+};
+
+/** Mirrors backend `StepCompletionDTO` (agent step validation). */
+export type StepCompletionDTO = {
+  collectedVolume?: number;
 };
 
 /**
@@ -89,14 +111,29 @@ export type TourResponseWire = {
   id: string;
   zoneId: string;
   zoneName: string;
+  zoneIds?: string[];
+  zoneNames?: string[];
   startTime: string;
   endTime: string;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
   status: TourStatus;
   totalDistanceKm: number | null;
   estimatedDurationMinutes: number | null;
   containerTypes?: ContainerType[];
+  exceededScheduledTime?: boolean | null;
+  anomaliesReportedCount?: number | null;
   createdAt: string | null;
   agents: TourAgent[];
+  currentLatitude?: number | null;
+  currentLongitude?: number | null;
   steps: TourStepDTO[];
   stepCount?: number;
+  skippedStepsCount?: number;
+};
+
+/** Mirrors backend `TourTelemetryUpdateDTO`. */
+export type TourTelemetryUpdateDTO = {
+  latitude: number;
+  longitude: number;
 };

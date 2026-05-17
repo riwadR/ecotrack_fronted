@@ -1,3 +1,4 @@
+import { isAxiosError } from "axios";
 import {
   CreateZonePayload,
   PatchZoneDetailsPayload,
@@ -5,7 +6,7 @@ import {
   Zone,
 } from "@/models/zone";
 import { backendApiClient } from "@/lib/api/apiClient";
-import { toApiError } from "@/lib/api/apiErrors";
+import { extractApiErrorMessage, toApiError } from "@/lib/api/apiErrors";
 
 export async function getZones(): Promise<Zone[]> {
   try {
@@ -71,6 +72,11 @@ export type ZoneDeletionChallengeItem = {
   title: string;
 };
 
+export type ZoneDeletionTourItem = {
+  id: string;
+  descriptor: string;
+};
+
 export type ZoneDeletionContainerItem = {
   id: string;
   serialNumber: string;
@@ -79,10 +85,12 @@ export type ZoneDeletionContainerItem = {
 export type ZoneDeletionPreview = {
   zoneId: string;
   zoneName: string;
-  challengeCount: number;
+  affectedChallengesCount: number;
+  affectedToursCount: number;
   containerCount: number;
   reportCount: number;
-  challenges: ZoneDeletionChallengeItem[];
+  affectedChallenges: ZoneDeletionChallengeItem[];
+  affectedTours: ZoneDeletionTourItem[];
   containers: ZoneDeletionContainerItem[];
 };
 
@@ -108,6 +116,19 @@ export async function deleteZone(id: string, options?: DeleteZoneOptions): Promi
       params: cascade ? { cascade: true } : undefined,
     });
   } catch (error) {
+    if (isAxiosError(error)) {
+      throw error;
+    }
     throw toApiError(error, "Impossible de supprimer la zone.");
   }
+}
+
+export function resolveZoneDeleteErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    return extractApiErrorMessage(error, "Impossible de supprimer la zone.");
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return "Impossible de supprimer la zone.";
 }
