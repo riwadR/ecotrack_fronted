@@ -15,6 +15,7 @@ import {
   buildPdfExportFilename,
   parseContentDispositionFilename,
 } from "@/lib/reports/pdfExportFilename";
+import type { ReportMetrics } from "@/models/reportMetrics";
 
 export type CreateReportInput = {
   containerId: string;
@@ -119,6 +120,34 @@ export async function updateReportStatus(
     return data;
   } catch (error) {
     throw toApiError(error, "Impossible de mettre à jour le signalement.");
+  }
+}
+
+export type ReportMetricsParams = {
+  startDate?: string;
+  endDate?: string;
+};
+
+/**
+ * Fetches UC-G03 aggregated metrics for the interactive analytics dashboard.
+ */
+export async function fetchReportMetrics(
+  params?: ReportMetricsParams
+): Promise<ReportMetrics> {
+  try {
+    const query: Record<string, string> = {};
+    if (params?.startDate) {
+      query.startDate = params.startDate;
+    }
+    if (params?.endDate) {
+      query.endDate = params.endDate;
+    }
+    const { data } = await backendApiClient.get<ReportMetrics>("reports/metrics", {
+      params: query,
+    });
+    return data;
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger les indicateurs.");
   }
 }
 
