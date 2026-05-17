@@ -7,6 +7,8 @@ import type { Container } from "@/models/map";
 import type { Role } from "@/models/user";
 import { getContainerTypeLabel } from "@/lib/containers/containerTypeLabels";
 import { formatSensorTimestampFr } from "@/lib/datetime/sensorTimestamp";
+import { parseBackendContainerStatus } from "@/lib/containers/backendContainerStatus";
+import { MARKER_COLOR_BY_STATUS } from "@/lib/containers/containerOperationalStatus";
 import { getFillLevelCategory } from "@/lib/map/fillLevelCategory";
 import { useBelowLgViewport } from "@/hooks/useBelowLgViewport";
 import { canShowCreateRouteAction } from "@/lib/map/mapActionPermissions";
@@ -17,16 +19,31 @@ const FILL_COLOR_BY_CATEGORY = {
   high: "#ef4444",
 } as const;
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Actif",
-  INACTIVE: "Inactif",
+const OPERATIONAL_STATUS_LABELS: Record<string, string> = {
+  OK: "OK",
   WARNING: "Alerte",
   CRITICAL: "Critique",
+  MAINTENANCE: "Maintenance",
 };
 
-function buildMarkerIcon(fillLevelPercent: number, isSelected: boolean): L.DivIcon {
+function resolveMarkerColor(
+  fillLevelPercent: number,
+  operationalStatus?: string | null
+): string {
+  if (operationalStatus) {
+    const status = parseBackendContainerStatus(operationalStatus);
+    return MARKER_COLOR_BY_STATUS[status];
+  }
   const category = getFillLevelCategory(fillLevelPercent);
-  const color = FILL_COLOR_BY_CATEGORY[category];
+  return FILL_COLOR_BY_CATEGORY[category];
+}
+
+function buildMarkerIcon(
+  fillLevelPercent: number,
+  isSelected: boolean,
+  operationalStatus?: string | null
+): L.DivIcon {
+  const color = resolveMarkerColor(fillLevelPercent, operationalStatus);
   const sizePx = isSelected ? 22 : 18;
   const borderPx = 2;
   const boxShadow = isSelected
@@ -71,8 +88,13 @@ export default function ContainerMarker({
 }: ContainerMarkerProps) {
   const belowLg = useBelowLgViewport();
   const icon = useMemo(
-    () => buildMarkerIcon(container.fillLevelPercent, isSelected),
-    [container.fillLevelPercent, isSelected]
+    () =>
+      buildMarkerIcon(
+        container.fillLevelPercent,
+        isSelected,
+        container.operationalStatus
+      ),
+    [container.fillLevelPercent, container.operationalStatus, isSelected]
   );
 
   const lastMeasuredLabel = formatSensorTimestampFr(container.lastMeasurementAt, {
@@ -81,7 +103,9 @@ export default function ContainerMarker({
   });
 
   const displaySerial = container.serialNumber ?? container.id;
-  const statusLabel = container.status ? STATUS_LABELS[container.status] ?? container.status : null;
+  const statusLabel = container.operationalStatus
+    ? OPERATIONAL_STATUS_LABELS[container.operationalStatus] ?? container.operationalStatus
+    : null;
 
   const showReport = Boolean(onReportIssue);
   const showRoute = Boolean(onCreateRoute) && canShowCreateRouteAction(viewerRole);

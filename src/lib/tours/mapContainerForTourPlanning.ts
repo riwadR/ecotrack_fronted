@@ -14,8 +14,7 @@ export function mapApiContainerForTourPlanning(record: ApiContainer): MapContain
     return null;
   }
 
-  const status = String(record.status ?? "").toUpperCase();
-  if (status === "MAINTENANCE") {
+  if (record.operationalStatus === "MAINTENANCE") {
     return null;
   }
 
@@ -32,7 +31,7 @@ export function mapApiContainerForTourPlanning(record: ApiContainer): MapContain
     serialNumber: record.serialNumber?.trim() || record.name?.trim() || record.id,
     zoneId: record.zoneId,
     zoneName: record.zoneName,
-    status: record.status,
+    operationalStatus: record.operationalStatus,
     containerType,
   };
 }

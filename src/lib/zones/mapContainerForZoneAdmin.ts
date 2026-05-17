@@ -24,7 +24,7 @@ export function mapApiContainerForZoneAdmin(record: ApiContainer): MapContainer 
     serialNumber: containerDisplayName(record),
     zoneId: record.zoneId,
     zoneName: record.zoneName,
-    status: record.status,
+    operationalStatus: record.operationalStatus,
     containerType: record.type,
   };
 }

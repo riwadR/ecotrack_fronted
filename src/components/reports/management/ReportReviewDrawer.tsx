@@ -4,6 +4,7 @@ import type { ReportListItem, ReportStatus, ReportUpdateStatus } from "@/models/
 import { getReportTypeLabel } from "@/lib/reports/reportTypeLabels";
 import SecureImage from "@/components/ui/SecureImage";
 import { isReportToProcessStatus } from "@/lib/reports/reportStatusLabels";
+import ReportOriginBadge from "@/components/reports/ReportOriginBadge";
 import ReportStatusBadge from "@/components/reports/management/ReportStatusBadge";
 import { resolvePublicUsername } from "@/lib/user/displayUsername";
 import { MOBILE_DASHBOARD_HEADER_TOP } from "@/lib/ui/appChrome";
@@ -35,7 +36,13 @@ function canReopen(status: ReportStatus): boolean {
 }
 
 function getReporterDetailsHeading(report: ReportListItem): string {
-  return report.reporterRole === "AGENT" ? "Détails de l'agent" : "Détails du citoyen";
+  if (report.origin === "SYSTEM") {
+    return "Origine système (IoT)";
+  }
+  if (report.origin === "AGENT" || report.reporterRole === "AGENT") {
+    return "Détails de l'agent";
+  }
+  return "Détails du citoyen";
 }
 
 function hasReporterIdentity(report: ReportListItem): boolean {
@@ -95,7 +102,10 @@ export default function ReportReviewDrawer({
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-y-contain px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <ReportStatusBadge status={report.status} />
+          <div className="flex flex-wrap items-center gap-2">
+            <ReportOriginBadge origin={report.origin} />
+            <ReportStatusBadge status={report.status} />
+          </div>
           <span className="text-xs text-slate-500">{formatReportDate(report.createdAt)}</span>
         </div>
 

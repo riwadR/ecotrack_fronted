@@ -50,3 +50,13 @@ export async function getActiveAgents(): Promise<User[]> {
     throw toApiError(error, "Impossible de charger les agents de collecte.");
   }
 }
+
+/** Active admins and managers eligible for zone notification assignment. */
+export async function getEligibleReceivers(): Promise<User[]> {
+  try {
+    const { data } = await backendApiClient.get<UserProfileWire[]>("users/eligible-receivers");
+    return data.map(mapUserProfile);
+  } catch (error) {
+    throw toApiError(error, "Impossible de charger les destinataires éligibles.");
+  }
+}

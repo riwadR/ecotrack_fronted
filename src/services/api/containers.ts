@@ -5,13 +5,24 @@ import {
   IoTPayload,
 } from "@/models/container";
 import type { BackendContainerStatus } from "@/lib/containers/backendContainerStatus";
+import {
+  normalizeContainerFromApi,
+  type ContainerApiRow,
+} from "@/lib/containers/normalizeContainerFromApi";
 import { backendApiClient } from "@/lib/api/apiClient";
 import { toApiError } from "@/lib/api/apiErrors";
+import { buildDateRangeParams, type DateRangeQueryInput } from "@/lib/api/dateRangeParams";
 
-export async function getContainers(): Promise<Container[]> {
+export type GetContainersParams = {
+  dateRange?: DateRangeQueryInput;
+};
+
+export async function getContainers(params?: GetContainersParams): Promise<Container[]> {
   try {
-    const { data } = await backendApiClient.get<Container[]>("containers");
-    return data;
+    const { data } = await backendApiClient.get<ContainerApiRow[]>("containers", {
+      params: buildDateRangeParams(params?.dateRange),
+    });
+    return data.map(normalizeContainerFromApi);
   } catch (error) {
     throw toApiError(error, "Impossible de charger les conteneurs.");
   }
@@ -19,10 +30,10 @@ export async function getContainers(): Promise<Container[]> {
 
 export async function getContainerById(id: string): Promise<Container> {
   try {
-    const { data } = await backendApiClient.get<Container>(
+    const { data } = await backendApiClient.get<ContainerApiRow>(
       `containers/${encodeURIComponent(id)}`
     );
-    return data;
+    return normalizeContainerFromApi(data);
   } catch (error) {
     throw toApiError(error, "Impossible de charger le conteneur.");
   }

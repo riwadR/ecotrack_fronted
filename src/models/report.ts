@@ -35,6 +35,15 @@ export const REPORT_STATUS_VALUES = [
 
 export type ReportStatus = (typeof REPORT_STATUS_VALUES)[number];
 
+/** Mirrors backend `ReportOrigin` enum. */
+export const REPORT_ORIGIN_VALUES = ["CITIZEN", "AGENT", "SYSTEM"] as const;
+
+export type ReportOrigin = (typeof REPORT_ORIGIN_VALUES)[number];
+
+export function isReportOrigin(value: string): value is ReportOrigin {
+  return (REPORT_ORIGIN_VALUES as readonly string[]).includes(value);
+}
+
 /** Statuses exposed in management tabs. */
 export type ReportManagementTabStatus =
   | "PENDING"
@@ -52,6 +61,7 @@ export type ReportListItem = {
   id: string;
   type: ReportType;
   status: ReportStatus;
+  origin?: ReportOrigin;
   latitude?: number | null;
   longitude?: number | null;
   photoUrl?: string | null;

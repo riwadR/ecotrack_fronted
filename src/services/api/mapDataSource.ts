@@ -6,9 +6,13 @@ import { toApiError } from "@/lib/api/apiErrors";
  */
 export type ContainerApiRecord = {
   id: string;
+  serialNumber?: string | null;
+  type?: string | null;
+  status?: string | null;
   fillLevel?: number | null;
   latitude?: number | null;
   longitude?: number | null;
+  zoneName?: string | null;
   lastSensorUpdate?: string | (number | string)[] | null;
 };
 

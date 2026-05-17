@@ -17,14 +17,30 @@ export async function getZones(): Promise<Zone[]> {
   }
 }
 
+function appendZoneAssignmentFields(
+  body: Record<string, unknown>,
+  payload: {
+    managerId?: string | null;
+    notificationReceiverIds?: string[];
+  }
+) {
+  if (payload.managerId) {
+    body.managerId = payload.managerId;
+  }
+  if (payload.notificationReceiverIds !== undefined) {
+    body.notificationReceiverIds = payload.notificationReceiverIds;
+  }
+}
+
 export async function createZone(payload: CreateZonePayload): Promise<Zone> {
-  const body: Record<string, string> = {
+  const body: Record<string, unknown> = {
     name: payload.name,
     wktPolygon: payload.wktPolygon,
   };
   if (payload.description !== undefined) {
     body.description = payload.description;
   }
+  appendZoneAssignmentFields(body, payload);
 
   try {
     const { data } = await backendApiClient.post<Zone>("zones", body);
@@ -38,13 +54,14 @@ export async function updateZone(
   id: string,
   payload: UpdateZonePayload
 ): Promise<void> {
-  const body: Record<string, string> = {
+  const body: Record<string, unknown> = {
     name: payload.name,
     wktPolygon: payload.wktPolygon,
   };
   if (payload.description !== undefined) {
     body.description = payload.description ?? "";
   }
+  appendZoneAssignmentFields(body, payload);
 
   try {
     await backendApiClient.put(`zones/${encodeURIComponent(id)}`, body);
@@ -57,11 +74,14 @@ export async function patchZoneDetails(
   id: string,
   payload: PatchZoneDetailsPayload
 ): Promise<void> {
+  const body: Record<string, unknown> = {
+    name: payload.name,
+    description: payload.description,
+  };
+  appendZoneAssignmentFields(body, payload);
+
   try {
-    await backendApiClient.patch(
-      `zones/${encodeURIComponent(id)}`,
-      payload
-    );
+    await backendApiClient.patch(`zones/${encodeURIComponent(id)}`, body);
   } catch (error) {
     throw toApiError(error, "Impossible de mettre à jour la zone.");
   }

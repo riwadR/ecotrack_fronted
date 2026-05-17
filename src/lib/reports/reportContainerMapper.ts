@@ -1,5 +1,6 @@
 import type { Container as ApiContainer } from "@/models/container";
 import type { Container as MapContainer } from "@/models/map";
+import { parseBackendContainerStatus } from "@/lib/containers/backendContainerStatus";
 import { resolveContainerType } from "@/lib/containers/containerTypeLabels";
 import {
   normalizeSensorTimestampToIso,
@@ -55,7 +56,8 @@ export function mapApiContainerToReportMapContainer(
     lastMeasurementAt: resolveLastMeasurementIso(record),
     serialNumber,
     zoneName: record.zoneName,
-    status: record.status,
+    operationalStatus:
+      record.operationalStatus ?? parseBackendContainerStatus(record.status),
     containerType,
   };
 }

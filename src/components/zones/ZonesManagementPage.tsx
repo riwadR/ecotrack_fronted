@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { Polygon } from "leaflet";
 import type { Container } from "@/models/container";
 import type { Role } from "@/models/user";
-import type { Zone } from "@/models/zone";
+import type { Zone, ZoneFormValues } from "@/models/zone";
 import { mapApiZoneToMapZone } from "@/lib/map/mapDtoMappers";
 import { wktPolygonOuterRingToLatLngTuples } from "@/lib/map/wktToLeafletRing";
 import { getPolygonOuterRingLatLng } from "@/lib/zones/polygonGeoUtils";
@@ -565,7 +565,7 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   }, [nameModalSubmitting]);
 
   const handleNameModalConfirm = useCallback(
-    async (zoneName: string) => {
+    async (values: ZoneFormValues) => {
       const layer = pendingPolygonRef.current;
       const discard = pendingDiscardRef.current;
       if (!layer || !discard) {
@@ -578,7 +578,13 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
         setNameModalSubmitting(true);
         const ring = getPolygonOuterRingLatLng(layer);
         const wktPolygon = latLngRingToPolygonWkt(ring);
-        await createZone({ name: zoneName.trim(), wktPolygon, description: "" });
+        await createZone({
+          name: values.name.trim(),
+          wktPolygon,
+          description: values.description,
+          managerId: values.managerId || undefined,
+          notificationReceiverIds: values.notificationReceiverIds,
+        });
         discard();
         pendingPolygonRef.current = null;
         pendingDiscardRef.current = null;
@@ -608,6 +614,9 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
             name: label,
             wktPolygon: edit.wktPolygon,
             description: meta?.description ?? "",
+            managerId: meta?.manager?.id,
+            notificationReceiverIds:
+              meta?.notificationReceivers?.map((user) => user.id) ?? [],
           });
         }
 
@@ -682,14 +691,19 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
   }, [editModalSubmitting]);
 
   const handleSaveEditedZoneDetails = useCallback(
-    async (name: string, description: string) => {
+    async (values: ZoneFormValues) => {
       if (!editingZone) {
         return;
       }
       try {
         setTableMutationError("");
         setEditModalSubmitting(true);
-        await patchZoneDetails(editingZone.id, { name, description });
+        await patchZoneDetails(editingZone.id, {
+          name: values.name,
+          description: values.description,
+          managerId: values.managerId || undefined,
+          notificationReceiverIds: values.notificationReceiverIds,
+        });
         setEditingZone(null);
         await reloadGeometries();
       } catch (err) {
@@ -815,6 +829,10 @@ export default function ZonesManagementPage({ viewerRole }: ZonesManagementPageP
           isOpen={editingZone !== null}
           initialName={editingZone.name}
           initialDescription={editingZone.description ?? ""}
+          initialManagerId={editingZone.manager?.id ?? ""}
+          initialNotificationReceiverIds={
+            editingZone.notificationReceivers?.map((user) => user.id) ?? []
+          }
           isSubmitting={editModalSubmitting}
           onSave={handleSaveEditedZoneDetails}
           onClose={handleCloseEditZoneModal}

@@ -1,6 +1,10 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import type { ZoneFormValues } from "@/models/zone";
+import type { User } from "@/models/user";
+import { getEligibleReceivers } from "@/services/api/usersClient";
+import ZoneAssignmentFields from "@/components/zones/ZoneAssignmentFields";
 import {
   APP_MODAL_BODY_CLASS,
   APP_MODAL_FOOTER_CLASS,
@@ -15,23 +19,74 @@ import {
 export type ZoneNameModalProps = {
   isOpen: boolean;
   initialName?: string;
+  initialManagerId?: string;
+  initialNotificationReceiverIds?: string[];
   isSubmitting?: boolean;
-  onConfirm: (zoneName: string) => void | Promise<void>;
+  onConfirm: (values: ZoneFormValues) => void | Promise<void>;
   onCancel: () => void;
 };
 
 /**
- * Lightweight naming step after a polygon sketch is finished.
+ * Naming and assignment step after a polygon sketch is finished.
  */
 export default function ZoneNameModal({
   isOpen,
   initialName = "",
+  initialManagerId = "",
+  initialNotificationReceiverIds = [],
   isSubmitting = false,
   onConfirm,
   onCancel,
 }: ZoneNameModalProps) {
   const labelId = useId();
+  const formId = useId();
   const [draftName, setDraftName] = useState(initialName);
+  const [managerId, setManagerId] = useState(initialManagerId);
+  const [notificationReceiverIds, setNotificationReceiverIds] = useState(
+    initialNotificationReceiverIds
+  );
+  const [eligibleUsers, setEligibleUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    setDraftName(initialName);
+    setManagerId(initialManagerId);
+    setNotificationReceiverIds(initialNotificationReceiverIds);
+  }, [isOpen, initialName, initialManagerId, initialNotificationReceiverIds]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    let cancelled = false;
+    setLoadingUsers(true);
+    void getEligibleReceivers()
+      .then((users) => {
+        if (!cancelled) {
+          setEligibleUsers(users);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEligibleUsers([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingUsers(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    setNotificationReceiverIds((prev) => prev.filter((id) => id !== managerId));
+  }, [managerId]);
 
   if (!isOpen) {
     return null;
@@ -39,6 +94,18 @@ export default function ZoneNameModal({
 
   const trimmed = draftName.trim();
   const canSubmit = trimmed.length > 0;
+
+  const submit = () => {
+    if (!canSubmit || isSubmitting) {
+      return;
+    }
+    void onConfirm({
+      name: trimmed,
+      description: "",
+      managerId,
+      notificationReceiverIds,
+    });
+  };
 
   return (
     <div
@@ -50,17 +117,20 @@ export default function ZoneNameModal({
         if (!isSubmitting) onCancel();
       }}
     >
-      <div className={APP_MODAL_PANEL_COMPACT_CLASS} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`${APP_MODAL_PANEL_COMPACT_CLASS} max-h-[min(92vh,40rem)] overflow-y-auto`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className={APP_MODAL_HEADER_CLASS}>
           <h2 id={labelId} className={APP_MODAL_TITLE_CLASS}>
-            Nom de la zone
+            Nouvelle zone
           </h2>
           <p className={APP_MODAL_SUBTITLE_CLASS}>
-            Saisissez le libellé administratif du secteur (ex.&nbsp;: Zone Nord).
+            Nommez le secteur et assignez le gestionnaire ainsi que les destinataires des alertes.
           </p>
         </header>
 
-        <div className={APP_MODAL_BODY_CLASS}>
+        <div className={`${APP_MODAL_BODY_CLASS} space-y-4`}>
           <div>
             <label
               htmlFor={`${labelId}-input`}
@@ -80,7 +150,7 @@ export default function ZoneNameModal({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && canSubmit && !isSubmitting) {
                   e.preventDefault();
-                  void onConfirm(trimmed);
+                  submit();
                 }
                 if (e.key === "Escape" && !isSubmitting) {
                   e.preventDefault();
@@ -89,6 +159,17 @@ export default function ZoneNameModal({
               }}
             />
           </div>
+
+          <ZoneAssignmentFields
+            formId={formId}
+            eligibleUsers={eligibleUsers}
+            loadingUsers={loadingUsers}
+            managerId={managerId}
+            notificationReceiverIds={notificationReceiverIds}
+            disabled={isSubmitting}
+            onManagerChange={setManagerId}
+            onReceiversChange={setNotificationReceiverIds}
+          />
         </div>
 
         <footer className={APP_MODAL_FOOTER_CLASS}>
@@ -104,11 +185,7 @@ export default function ZoneNameModal({
             type="button"
             disabled={!canSubmit || isSubmitting}
             className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
-            onClick={() => {
-              if (canSubmit && !isSubmitting) {
-                void onConfirm(trimmed);
-              }
-            }}
+            onClick={submit}
           >
             {isSubmitting ? "Enregistrement…" : "Valider"}
           </button>

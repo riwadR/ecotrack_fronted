@@ -1,6 +1,8 @@
 import type { Container, Zone } from "@/models/map";
 import type { ContainerApiRecord, ZoneApiRecord } from "@/services/api/mapDataSource";
 import { normalizeSensorTimestampToIso } from "@/lib/datetime/sensorTimestamp";
+import { parseBackendContainerStatus } from "@/lib/containers/backendContainerStatus";
+import { resolveContainerType } from "@/lib/containers/containerTypeLabels";
 import { wktPolygonOuterRingToLatLngTuples } from "@/lib/map/wktToLeafletRing";
 
 /** @deprecated Use {@link normalizeSensorTimestampToIso} from `@/lib/datetime/sensorTimestamp`. */
@@ -23,6 +25,10 @@ export function mapApiContainerToMapContainer(record: ContainerApiRecord): Conta
     longitude: lng,
     fillLevelPercent: clampedFill,
     lastMeasurementAt: normalizeLastSensorUpdateToIso(record.lastSensorUpdate),
+    serialNumber: record.serialNumber ?? undefined,
+    zoneName: record.zoneName ?? undefined,
+    operationalStatus: parseBackendContainerStatus(record.status),
+    containerType: resolveContainerType(record.type ?? undefined),
   };
 }
 

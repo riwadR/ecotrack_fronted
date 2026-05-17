@@ -1,4 +1,5 @@
 import DashboardKPIs from "@/components/dashboard/DashboardKPIs";
+import DashboardControlTower from "@/components/dashboard/DashboardControlTower";
 import DashboardOverviewChart from "@/components/dashboard/DashboardOverviewChart";
 import CitizenGamificationOverview from "@/components/gamification/CitizenGamificationOverview";
 import { getSession } from "@/lib/auth";
@@ -18,6 +19,10 @@ export default async function DashboardPage() {
       </header>
 
       <DashboardKPIs />
+
+      {session?.role === "ADMIN" || session?.role === "MANAGER" ? (
+        <DashboardControlTower />
+      ) : null}
 
       {session?.role === "CITIZEN" ? <CitizenGamificationOverview /> : null}
 

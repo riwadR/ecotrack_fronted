@@ -2,6 +2,7 @@
 
 import type { ReportListItem } from "@/models/report";
 import { getReportTypeLabel } from "@/lib/reports/reportTypeLabels";
+import ReportOriginBadge from "@/components/reports/ReportOriginBadge";
 import ReportStatusBadge from "@/components/reports/management/ReportStatusBadge";
 
 export type ReportCardProps = {
@@ -41,7 +42,10 @@ export default function ReportCard({ report, onClick }: ReportCardProps) {
           <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">Date</p>
           <p className="m-0 text-sm font-semibold text-slate-900">{formatReportDate(report.createdAt)}</p>
         </div>
-        <ReportStatusBadge status={report.status} />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ReportOriginBadge origin={report.origin} />
+          <ReportStatusBadge status={report.status} />
+        </div>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">

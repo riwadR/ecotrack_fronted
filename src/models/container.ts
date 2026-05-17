@@ -1,3 +1,5 @@
+import type { BackendContainerStatus } from "@/lib/containers/backendContainerStatus";
+
 /** Mirrors backend `com.ingetis.ecotrack.entity.enums.container.ContainerType`. */
 export type ContainerType = "GLASS" | "PLASTIC" | "PAPER" | "GENERAL";
 
@@ -40,6 +42,8 @@ export type Container = {
   type?: ContainerType;
   wasteType?: WasteType;
   status: ContainerStatus;
+  /** Threshold-derived status from the backend (`OK`, `WARNING`, `CRITICAL`, `MAINTENANCE`). */
+  operationalStatus?: BackendContainerStatus;
   fillLevel?: number;
   latitude?: number;
   longitude?: number;

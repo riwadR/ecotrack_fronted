@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { ReportListItem, ReportManagementTabStatus, ReportUpdateStatus } from "@/models/report";
+import type {
+  ReportListItem,
+  ReportManagementTabStatus,
+  ReportOrigin,
+  ReportUpdateStatus,
+} from "@/models/report";
+import type { CustomDateRangeInput } from "@/lib/dateFilter";
+import DateRangeFilter from "@/components/ui/DateRangeFilter";
+import { APP_FORM_LABEL_CLASS, APP_FORM_CONTROL_CLASS } from "@/lib/ui/appChrome";
 import { getReports, updateReportStatus } from "@/services/api/reports";
 import ReportToast from "@/components/reports/ReportToast";
 import ReportCard from "@/components/reports/management/ReportCard";
@@ -19,8 +27,22 @@ const EMPTY_COUNTS: Record<ReportManagementTabStatus, number> = {
 /**
  * Back-office dashboard for agents and admins to review and update report statuses.
  */
+type OriginFilter = "all" | ReportOrigin;
+
+const ORIGIN_FILTER_OPTIONS: { value: OriginFilter; label: string }[] = [
+  { value: "all", label: "Tout" },
+  { value: "AGENT", label: "Agent" },
+  { value: "CITIZEN", label: "Citoyen" },
+  { value: "SYSTEM", label: "IoT / Système" },
+];
+
 export default function ReportsManagementPage() {
   const [activeTab, setActiveTab] = useState<ReportManagementTabStatus>("PENDING");
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
+  const [dateRange, setDateRange] = useState<CustomDateRangeInput>({
+    startDate: "",
+    endDate: "",
+  });
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [tabCounts, setTabCounts] = useState(EMPTY_COUNTS);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,13 +52,22 @@ export default function ReportsManagementPage() {
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const listParams = useCallback(
+    (status: ReportManagementTabStatus) => ({
+      status,
+      origin: originFilter === "all" ? undefined : originFilter,
+      dateRange,
+    }),
+    [originFilter, dateRange]
+  );
+
   const refreshTabCounts = useCallback(async () => {
     try {
       const [pending, toProcess, resolved, rejected] = await Promise.all([
-        getReports("PENDING"),
-        getReports("VALIDATED"),
-        getReports("RESOLVED"),
-        getReports("REJECTED"),
+        getReports(listParams("PENDING")),
+        getReports(listParams("VALIDATED")),
+        getReports(listParams("RESOLVED")),
+        getReports(listParams("REJECTED")),
       ]);
       setTabCounts({
         PENDING: pending.length,
@@ -47,13 +78,13 @@ export default function ReportsManagementPage() {
     } catch {
       /* counts are non-blocking */
     }
-  }, []);
+  }, [listParams]);
 
   const loadReports = useCallback(async (status: ReportManagementTabStatus) => {
     setLoadError(null);
     setIsLoading(true);
     try {
-      const data = await getReports(status);
+      const data = await getReports(listParams(status));
       setReports(data);
     } catch (err) {
       setReports([]);
@@ -61,7 +92,7 @@ export default function ReportsManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [listParams]);
 
   useEffect(() => {
     void refreshTabCounts();
@@ -132,6 +163,29 @@ export default function ReportsManagementPage() {
           counts={tabCounts}
           onChange={handleTabChange}
         />
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <label className={`${APP_FORM_LABEL_CLASS} min-w-[12rem]`}>
+            Soumis par :
+            <select
+              value={originFilter}
+              onChange={(e) => setOriginFilter(e.target.value as OriginFilter)}
+              disabled={isLoading}
+              className={APP_FORM_CONTROL_CLASS}
+            >
+              {ORIGIN_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <DateRangeFilter
+            value={dateRange}
+            onChange={setDateRange}
+            disabled={isLoading}
+          />
+        </div>
 
         {loadError ? (
           <div

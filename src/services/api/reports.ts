@@ -6,9 +6,11 @@ import type {
   CreateReportPayload,
   ReportListItem,
   ReportManagementTabStatus,
+  ReportOrigin,
   ReportResponse,
   UpdateReportStatusPayload,
 } from "@/models/report";
+import { buildDateRangeParams, type DateRangeQueryInput } from "@/lib/api/dateRangeParams";
 
 export type CreateReportInput = {
   containerId: string;
@@ -56,12 +58,20 @@ export async function createReport(input: CreateReportInput): Promise<ReportResp
   }
 }
 
-export async function getReports(
-  status?: ReportManagementTabStatus
-): Promise<ReportListItem[]> {
+export type GetReportsParams = {
+  status?: ReportManagementTabStatus;
+  origin?: ReportOrigin;
+  dateRange?: DateRangeQueryInput;
+};
+
+export async function getReports(params?: GetReportsParams): Promise<ReportListItem[]> {
   try {
     const { data } = await backendApiClient.get<ReportListItem[]>("reports", {
-      params: status ? { status } : undefined,
+      params: {
+        status: params?.status,
+        origin: params?.origin,
+        ...buildDateRangeParams(params?.dateRange),
+      },
     });
     return data;
   } catch (error) {

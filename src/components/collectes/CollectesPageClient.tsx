@@ -32,6 +32,8 @@ import {
 } from "@/lib/tours/tourDisplay";
 import { getTourStepCount } from "@/lib/tours/tourStepCount";
 import { deleteTour, getTourById, getTours } from "@/services/api/tourApi";
+import type { CustomDateRangeInput } from "@/lib/dateFilter";
+import DateRangeFilter from "@/components/ui/DateRangeFilter";
 
 type CollectesPageClientProps = {
   role: Role;
@@ -66,6 +68,10 @@ type ManagerPanel = "list" | "create" | "edit" | "view";
 
 function ManagerCollectesView() {
   const [tours, setTours] = useState<TourResponseDTO[]>([]);
+  const [dateRange, setDateRange] = useState<CustomDateRangeInput>({
+    startDate: "",
+    endDate: "",
+  });
   const [filter, setFilter] = useState<TourFilterId>("all");
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -82,7 +88,7 @@ function ManagerCollectesView() {
       setLoadError(null);
     }
     try {
-      const data = await getTours();
+      const data = await getTours(dateRange);
       setTours(data);
       if (silent) {
         setLoadError(null);
@@ -98,7 +104,7 @@ function ManagerCollectesView() {
         setInitialLoading(false);
       }
     }
-  }, []);
+  }, [dateRange]);
 
   useEffect(() => {
     if (panel !== "list") {
@@ -280,6 +286,12 @@ function ManagerCollectesView() {
           </div>
         ))}
       </div>
+
+      <DateRangeFilter
+        value={dateRange}
+        onChange={setDateRange}
+        disabled={initialLoading}
+      />
 
       <div className="flex flex-wrap gap-2">
         {TOUR_FILTER_OPTIONS.map((option) => (

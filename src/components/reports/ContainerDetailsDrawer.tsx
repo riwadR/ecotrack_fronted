@@ -1,15 +1,10 @@
 "use client";
 
 import type { Container } from "@/models/map";
+import { getContainerStatusLabel } from "@/lib/containers/containerOperationalStatus";
 import { getContainerTypeLabel } from "@/lib/containers/containerTypeLabels";
+import { parseBackendContainerStatus } from "@/lib/containers/backendContainerStatus";
 import { formatSensorTimestampFr } from "@/lib/datetime/sensorTimestamp";
-
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Actif",
-  INACTIVE: "Inactif",
-  WARNING: "Alerte",
-  CRITICAL: "Critique",
-};
 
 export type ContainerDetailsDrawerProps = {
   container: Container | null;
@@ -30,9 +25,9 @@ export default function ContainerDetailsDrawer({
   }
 
   const displaySerial = container.serialNumber ?? container.id;
-  const statusLabel = container.status
-    ? STATUS_LABELS[container.status] ?? container.status
-    : "—";
+  const statusLabel = getContainerStatusLabel(
+    parseBackendContainerStatus(container.operationalStatus)
+  );
 
   const lastMeasuredLabel = formatSensorTimestampFr(container.lastMeasurementAt);
   const containerTypeLabel = getContainerTypeLabel(container.containerType);

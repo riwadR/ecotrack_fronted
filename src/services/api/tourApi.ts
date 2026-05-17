@@ -9,6 +9,7 @@ import type {
   TourTelemetryUpdateDTO,
   TourUpdateRequestDTO,
 } from "@/models/tour";
+import { buildDateRangeParams, type DateRangeQueryInput } from "@/lib/api/dateRangeParams";
 
 function mapTourZones(wire: TourResponseWire): TourResponseDTO["zones"] {
   if (wire.zoneIds?.length) {
@@ -79,9 +80,11 @@ export async function generateOptimizedTour(
   }
 }
 
-export async function getTours(): Promise<TourResponseDTO[]> {
+export async function getTours(dateRange?: DateRangeQueryInput): Promise<TourResponseDTO[]> {
   try {
-    const { data } = await backendApiClient.get<TourResponseWire[]>("tours");
+    const { data } = await backendApiClient.get<TourResponseWire[]>("tours", {
+      params: buildDateRangeParams(dateRange),
+    });
     return data.map(mapTourResponse);
   } catch (error) {
     throw toApiError(error, "Impossible de charger les tournées.");
