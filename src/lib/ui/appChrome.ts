@@ -13,6 +13,10 @@ export const PAGE_DESCRIPTION_CLASS =
 /** Standard vertical rhythm for dashboard-style pages (replaces inline `grid gap: 24px`). */
 export const PAGE_STACK_CLASS = "grid gap-6";
 
+/** Matches dashboard mobile layout offset below the fixed top bar (`dashboard/layout.tsx`). */
+export const MOBILE_DASHBOARD_HEADER_TOP =
+  "max-lg:top-[calc(env(safe-area-inset-top,0px)+4.75rem)]";
+
 /** Section `<h2>` inside a card or panel. */
 export const SECTION_TITLE_CLASS =
   "m-0 text-base font-semibold tracking-tight text-slate-900 sm:text-lg";

@@ -19,8 +19,9 @@ export function isReportType(value: string): value is ReportType {
 export type CreateReportPayload = {
   containerId: string;
   type: ReportType;
-  comment: string;
-  photoUrl: string;
+  comment?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 /** Mirrors backend `ReportStatus` enum (management dashboard). */
@@ -62,6 +63,7 @@ export type ReportListItem = {
   reporterFirstName?: string;
   reporterLastName?: string;
   reporterEmail?: string;
+  reporterRole?: string | null;
   containerId?: string;
   containerSerialNumber?: string;
   containerZoneName?: string;

@@ -6,6 +6,7 @@ import {
   computeRealDurationMinutes,
   computeSuccessRateLabel,
   formatElapsedMinutes,
+  formatTourCompletionIncidents,
   sumCollectedVolumeLiters,
 } from "@/lib/tours/tourPerformanceReport";
 
@@ -75,7 +76,7 @@ export default function TourPerformanceReport({ tour }: TourPerformanceReportPro
     (tour.exceededScheduledTime == null &&
       tour.estimatedDurationMinutes != null &&
       durationMinutes > tour.estimatedDurationMinutes);
-  const anomaliesCount = tour.anomaliesReportedCount ?? 0;
+  const completionIncidentsLabel = formatTourCompletionIncidents(tour);
 
   return (
     <section className="mb-4" aria-label="Rapport de performance">
@@ -100,10 +101,10 @@ export default function TourPerformanceReport({ tour }: TourPerformanceReportPro
       {showCompletionMetrics ? (
         <article className="mt-3 rounded-xl border border-slate-200 bg-white p-3 lg:p-3.5">
           <p className="m-0 text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:text-xs">
-            Anomalies
+            Incidents
           </p>
           <p className="m-0 mt-1 text-sm font-semibold text-slate-900 lg:text-base">
-            Nombre d&apos;anomalies signalées : {anomaliesCount}
+            {completionIncidentsLabel}
           </p>
         </article>
       ) : null}

@@ -2,12 +2,11 @@
 
 import type { ReportListItem, ReportStatus, ReportUpdateStatus } from "@/models/report";
 import { getReportTypeLabel } from "@/lib/reports/reportTypeLabels";
+import SecureImage from "@/components/ui/SecureImage";
 import { isReportToProcessStatus } from "@/lib/reports/reportStatusLabels";
 import ReportStatusBadge from "@/components/reports/management/ReportStatusBadge";
 import { resolvePublicUsername } from "@/lib/user/displayUsername";
-
-const PHOTO_PLACEHOLDER =
-  "https://dummyimage.com/640x360/e2e8f0/64748b&text=Aucune+photo";
+import { MOBILE_DASHBOARD_HEADER_TOP } from "@/lib/ui/appChrome";
 
 export type ReportReviewDrawerProps = {
   report: ReportListItem | null;
@@ -35,6 +34,10 @@ function canReopen(status: ReportStatus): boolean {
   return status !== "PENDING";
 }
 
+function getReporterDetailsHeading(report: ReportListItem): string {
+  return report.reporterRole === "AGENT" ? "Détails de l'agent" : "Détails du citoyen";
+}
+
 function hasReporterIdentity(report: ReportListItem): boolean {
   return Boolean(
     report.reporterId ||
@@ -59,7 +62,7 @@ export default function ReportReviewDrawer({
   const isPending = report.status === "PENDING";
   const isToProcess = isReportToProcessStatus(report.status);
   const showReopen = canReopen(report.status);
-  const photoSrc = report.photoUrl?.trim() ? report.photoUrl : PHOTO_PLACEHOLDER;
+  const hasPhoto = Boolean(report.photoUrl?.trim());
   const containerLabel =
     report.containerSerialNumber ?? report.containerId ?? "Conteneur inconnu";
 
@@ -67,27 +70,30 @@ export default function ReportReviewDrawer({
 
   return (
     <aside
-      className="fixed inset-y-0 right-0 z-[1000] flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl"
+      className={`fixed z-[1000] flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl max-lg:inset-x-0 max-lg:bottom-0 ${MOBILE_DASHBOARD_HEADER_TOP} lg:inset-y-0 lg:right-0`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-review-title"
     >
-      <header className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <h2 id="report-review-title" className="text-base font-semibold text-slate-900">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 max-lg:py-3.5">
+        <h2
+          id="report-review-title"
+          className="min-w-0 flex-1 text-base font-semibold leading-snug text-slate-900"
+        >
           Examen du signalement
         </h2>
         <button
           type="button"
           onClick={onClose}
           disabled={isUpdating}
-          className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg text-slate-600 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-50"
           aria-label="Fermer"
         >
           ✕
         </button>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-y-contain px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <ReportStatusBadge status={report.status} />
           <span className="text-xs text-slate-500">{formatReportDate(report.createdAt)}</span>
@@ -116,7 +122,7 @@ export default function ReportReviewDrawer({
               id="reporter-identity-title"
               className="m-0 text-sm font-semibold text-slate-800"
             >
-              Détails du citoyen
+              {getReporterDetailsHeading(report)}
             </h3>
             <dl className="m-0 mt-3 grid gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm">
               <div>
@@ -159,12 +165,12 @@ export default function ReportReviewDrawer({
 
         <section>
           <h3 className="m-0 text-sm font-semibold text-slate-800">Photo</h3>
-          <img
-            src={photoSrc}
+          <SecureImage
+            filename={report.photoUrl}
             alt="Preuve photographique du signalement"
             className="mt-2 w-full rounded-xl border border-slate-200 object-cover"
           />
-          {!report.photoUrl?.trim() ? (
+          {!hasPhoto ? (
             <p className="mt-1 text-xs text-slate-500">Aucune photo jointe au signalement.</p>
           ) : null}
         </section>
@@ -177,7 +183,7 @@ export default function ReportReviewDrawer({
       </div>
 
       {hasActions ? (
-        <footer className="flex flex-col gap-2 border-t border-slate-100 p-4">
+        <footer className="flex shrink-0 flex-col gap-2 border-t border-slate-100 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {isPending ? (
             <>
               <button

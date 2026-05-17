@@ -4,10 +4,14 @@ import { useId, useState } from "react";
 import type { Container } from "@/models/map";
 import type { ReportType } from "@/models/report";
 import {
-  MOCK_PHOTO_UPLOAD_URL,
   REPORT_TYPE_FORM_OPTIONS,
   reportTypeRequiresComment,
 } from "@/lib/reports/reportTypeLabels";
+import {
+  isReportImageTooLarge,
+  REPORT_IMAGE_MAX_SIZE_HELPER,
+  REPORT_IMAGE_TOO_LARGE_TOAST,
+} from "@/lib/reports/reportImageLimits";
 import {
   APP_FORM_CONTROL_CLASS,
   APP_MODAL_BODY_CLASS,
@@ -19,8 +23,6 @@ import {
   appModalBackdrop,
 } from "@/lib/ui/appChrome";
 
-const PHOTO_UPLOAD_DELAY_MS = 1400;
-
 export type ReportFormModalProps = {
   isOpen: boolean;
   container: Container | null;
@@ -31,8 +33,9 @@ export type ReportFormModalProps = {
     containerId: string;
     type: ReportType;
     comment: string;
-    photoUrl: string;
+    imageFile: File | null;
   }) => void | Promise<void>;
+  onFileTooLarge?: () => void;
 };
 
 /**
@@ -45,39 +48,38 @@ export default function ReportFormModal({
   submitError,
   onClose,
   onSubmit,
+  onFileTooLarge,
 }: ReportFormModalProps) {
   const formId = useId();
   const [issueType, setIssueType] = useState<ReportType>("FULL_CONTAINER");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   if (!isOpen || !container) {
     return null;
   }
 
   const displaySerial = container.serialNumber ?? container.id;
-  const busy = isSubmitting || isUploadingPhoto;
+  const busy = isSubmitting;
 
   const handleSubmit = async () => {
     if (reportTypeRequiresComment(issueType) && !comment.trim()) {
       setValidationError("Un commentaire est obligatoire pour le type « Autre ».");
       return;
     }
+    if (isReportImageTooLarge(photoFile)) {
+      setValidationError(REPORT_IMAGE_TOO_LARGE_TOAST);
+      onFileTooLarge?.();
+      return;
+    }
     setValidationError(null);
-
-    setIsUploadingPhoto(true);
-    await new Promise((resolve) => setTimeout(resolve, PHOTO_UPLOAD_DELAY_MS));
-    setIsUploadingPhoto(false);
-
-    const photoUrl = photoFile ? MOCK_PHOTO_UPLOAD_URL : "";
 
     await onSubmit({
       containerId: container.id,
       type: issueType,
       comment: comment.trim(),
-      photoUrl,
+      imageFile: photoFile,
     });
   };
 
@@ -178,17 +180,14 @@ export default function ReportFormModal({
             <input
               id={`${formId}-photo`}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               disabled={busy}
               className="mt-2 block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-emerald-900"
               onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
             />
-            {isUploadingPhoto ? (
-              <p className="mt-2 text-xs font-medium text-emerald-800" role="status">
-                Téléversement de la photo en cours…
-              </p>
-            ) : photoFile ? (
-              <p className="mt-2 text-xs text-slate-500">{photoFile.name} — prêt à l&apos;envoi</p>
+            <p className="m-0 mt-1.5 text-xs text-slate-500">{REPORT_IMAGE_MAX_SIZE_HELPER}</p>
+            {photoFile ? (
+              <p className="mt-2 text-xs text-slate-500">{photoFile.name}</p>
             ) : null}
           </div>
 
@@ -219,11 +218,7 @@ export default function ReportFormModal({
             className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
             onClick={() => void handleSubmit()}
           >
-            {isUploadingPhoto
-              ? "Téléversement…"
-              : isSubmitting
-                ? "Envoi…"
-                : "Envoyer le signalement"}
+            {isSubmitting ? "Envoi…" : "Envoyer le signalement"}
           </button>
         </footer>
       </div>

@@ -26,8 +26,15 @@ async function proxy(req: NextRequest, method: string) {
     `${getBackendBaseUrl()}/api/${restPath}${url.search}`
   );
 
-  const bodyText =
-    method === "GET" || method === "HEAD" ? undefined : await req.text();
+  const contentType = req.headers.get("content-type") ?? "";
+  const isMultipart = contentType.includes("multipart/form-data");
+
+  const requestBody: string | ArrayBuffer | undefined =
+    method === "GET" || method === "HEAD"
+      ? undefined
+      : isMultipart
+        ? await req.arrayBuffer()
+        : await req.text();
 
   async function callUpstream(token: string | undefined) {
     const headers = new Headers(req.headers);
@@ -41,11 +48,13 @@ async function proxy(req: NextRequest, method: string) {
       headers.delete("authorization");
     }
 
-    if (bodyText !== undefined) {
-      headers.set(
-        "content-length",
-        Buffer.byteLength(bodyText, "utf8").toString()
-      );
+    if (requestBody !== undefined) {
+      if (typeof requestBody === "string") {
+        headers.set(
+          "content-length",
+          Buffer.byteLength(requestBody, "utf8").toString()
+        );
+      }
     } else {
       headers.delete("content-length");
     }
@@ -53,7 +62,7 @@ async function proxy(req: NextRequest, method: string) {
     return fetch(upstreamUrl, {
       method,
       headers,
-      body: bodyText,
+      body: requestBody,
       cache: "no-store",
     });
   }
@@ -96,6 +105,12 @@ async function proxy(req: NextRequest, method: string) {
       status: upstreamRes.status,
       headers: resHeaders,
     });
+  }
+
+  const upstreamContentType = upstreamRes.headers.get("content-type") ?? "";
+  if (upstreamContentType.startsWith("image/")) {
+    const buffer = await upstreamRes.arrayBuffer();
+    return new NextResponse(buffer, { status: upstreamRes.status, headers: resHeaders });
   }
 
   const body = await upstreamRes.text();

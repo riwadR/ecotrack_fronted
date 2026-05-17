@@ -45,7 +45,10 @@ export function findFirstPendingStep(steps: TourStepDTO[]): TourStepDTO | null {
 
 export function areAllTourStepsCompleted(steps: TourStepDTO[]): boolean {
   const ordered = sortTourSteps(steps);
-  return ordered.length > 0 && ordered.every((step) => step.status === "COMPLETED");
+  return (
+    ordered.length > 0 &&
+    ordered.every((step) => step.status === "COMPLETED" || step.status === "SKIPPED")
+  );
 }
 
 /** 1-based position of the current pending step in the ordered itinerary. */

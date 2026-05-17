@@ -23,12 +23,12 @@ const NAV_LINKS: NavLink[] = [
   {
     href: "/dashboard/signalements",
     label: "🗺️ Carte & Signalements",
-    roles: ["AGENT", "CITIZEN"],
+    roles: ["CITIZEN"],
   },
   {
     href: "/dashboard/reports-management",
     label: "📋 Gestion signalements",
-    roles: ["ADMIN", "AGENT"],
+    roles: ["ADMIN"],
   },
   { href: "/dashboard/gamification", label: "Gamification", roles: ["CITIZEN"] },
   { href: "/dashboard/challenges", label: "🏆 Défis", roles: ["CITIZEN"] },

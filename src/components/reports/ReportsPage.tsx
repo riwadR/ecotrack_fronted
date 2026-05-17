@@ -17,6 +17,7 @@ import ContainerDetailsDrawer from "@/components/reports/ContainerDetailsDrawer"
 import ReportFormModal from "@/components/reports/ReportFormModal";
 import CitizenReportSuccessModal from "@/components/reports/CitizenReportSuccessModal";
 import ReportToast from "@/components/reports/ReportToast";
+import { REPORT_IMAGE_TOO_LARGE_TOAST } from "@/lib/reports/reportImageLimits";
 import { PAGE_DESCRIPTION_CLASS, PAGE_TITLE_CLASS } from "@/lib/ui/appChrome";
 
 const MAP_CONTAINERS_REFRESH_MS = 15_000;
@@ -67,6 +68,7 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [citizenSuccessOpen, setCitizenSuccessOpen] = useState(false);
   const [agentToastMessage, setAgentToastMessage] = useState<string | null>(null);
+  const [fileSizeToastMessage, setFileSizeToastMessage] = useState<string | null>(null);
 
   const loadMapData = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -170,12 +172,17 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
       containerId: string;
       type: import("@/models/report").ReportType;
       comment: string;
-      photoUrl: string;
+      imageFile: File | null;
     }) => {
       setIsSubmitting(true);
       setSubmitError(null);
       try {
-        await createReport(payload);
+        await createReport({
+          containerId: payload.containerId,
+          type: payload.type,
+          comment: payload.comment,
+          imageFile: payload.imageFile,
+        });
         handleReportSuccess();
       } catch (err) {
         setSubmitError(err instanceof Error ? err.message : "Échec de l'envoi du signalement.");
@@ -268,6 +275,7 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
         submitError={submitError}
         onClose={closeReportForm}
         onSubmit={handleReportSubmit}
+        onFileTooLarge={() => setFileSizeToastMessage(REPORT_IMAGE_TOO_LARGE_TOAST)}
       />
 
       <CitizenReportSuccessModal
@@ -279,6 +287,13 @@ export default function ReportsPage({ viewerRole }: ReportsPageProps) {
         <ReportToast
           message={agentToastMessage}
           onDismiss={() => setAgentToastMessage(null)}
+        />
+      ) : null}
+      {fileSizeToastMessage ? (
+        <ReportToast
+          message={fileSizeToastMessage}
+          variant="warning"
+          onDismiss={() => setFileSizeToastMessage(null)}
         />
       ) : null}
     </div>

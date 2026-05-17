@@ -2,7 +2,7 @@
 
 export type ReportToastProps = {
   message: string;
-  variant?: "success" | "neutral";
+  variant?: "success" | "neutral" | "warning";
   onDismiss: () => void;
 };
 
@@ -14,7 +14,8 @@ export default function ReportToast({
   variant = "success",
   onDismiss,
 }: ReportToastProps) {
-  const background = variant === "success" ? "#0f766e" : "#334155";
+  const background =
+    variant === "success" ? "#0f766e" : variant === "warning" ? "#b45309" : "#334155";
 
   return (
     <div

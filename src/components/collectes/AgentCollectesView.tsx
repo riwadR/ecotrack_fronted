@@ -1,11 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TourResponseDTO, TourStepDTO } from "@/models/tour";
+import ReportAnomalyDrawer from "@/components/reports/ReportAnomalyDrawer";
 import ReportToast from "@/components/reports/ReportToast";
 import TourStepCompletionDrawer from "@/components/tours/TourStepCompletionDrawer";
+import { createReport } from "@/services/api/reports";
 import {
   formatTourDistance,
   formatTourDuration,
@@ -24,11 +25,13 @@ import {
   getTourStepProgress,
   sortTourSteps,
 } from "@/lib/tours/tourRouteMap";
+import { REPORT_IMAGE_TOO_LARGE_TOAST } from "@/lib/reports/reportImageLimits";
 import { SECTION_TITLE_CLASS } from "@/lib/ui/appChrome";
 import { useAgentTourTelemetry } from "@/hooks/useAgentTourTelemetry";
 import {
   completeTourStep,
   getMyCurrentTour,
+  skipTourStep,
   startTour,
 } from "@/services/api/tourApi";
 
@@ -43,7 +46,7 @@ const TourItineraryMap = dynamic(() => import("@/components/tours/TourItineraryM
 
 type ToastState = {
   message: string;
-  variant: "success" | "neutral";
+  variant: "success" | "neutral" | "warning";
 };
 
 function AgentTourEmptyState() {
@@ -74,14 +77,14 @@ type AgentCurrentStepCardProps = {
   step: TourStepDTO;
   tourStatus: TourResponseDTO["status"];
   onValidate: (step: TourStepDTO) => void;
-  onReportRedirect: () => void;
+  onReport: (step: TourStepDTO) => void;
 };
 
 function AgentCurrentStepCard({
   step,
   tourStatus,
   onValidate,
-  onReportRedirect,
+  onReport,
 }: AgentCurrentStepCardProps) {
   const canValidate = tourStatus === "IN_PROGRESS" && step.status === "PENDING";
 
@@ -112,13 +115,15 @@ function AgentCurrentStepCard({
           </button>
         ) : null}
 
-        <Link
-          href={`/dashboard/signalements?containerId=${encodeURIComponent(step.containerId)}`}
-          onClick={onReportRedirect}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
-          Signaler un problème
-        </Link>
+        {tourStatus === "IN_PROGRESS" ? (
+          <button
+            type="button"
+            onClick={() => onReport(step)}
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Signaler un problème
+          </button>
+        ) : null}
       </div>
     </article>
   );
@@ -132,6 +137,9 @@ export default function AgentCollectesView() {
   const [completionStep, setCompletionStep] = useState<TourStepDTO | null>(null);
   const [completingStep, setCompletingStep] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [reportStep, setReportStep] = useState<TourStepDTO | null>(null);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useAgentTourTelemetry(tour);
@@ -168,7 +176,10 @@ export default function AgentCollectesView() {
 
   const stepProgress = useMemo(() => getTourStepProgress(steps), [steps]);
   const currentPendingStep = useMemo(() => findFirstPendingStep(steps), [steps]);
-  const tourCompleted = useMemo(() => areAllTourStepsCompleted(steps), [steps]);
+  const tourCompleted = useMemo(
+    () => tour?.status === "COMPLETED" || areAllTourStepsCompleted(steps),
+    [steps, tour?.status]
+  );
 
   useEffect(() => {
     if (!tour) {
@@ -199,6 +210,44 @@ export default function AgentCollectesView() {
       setStartingTour(false);
     }
   }, [loadTour, tour]);
+
+  const handleReportSubmit = useCallback(
+    async (payload: {
+      containerId: string;
+      type: import("@/models/report").ReportType;
+      comment: string;
+      imageFile: File | null;
+    }) => {
+      const stepToSkip = reportStep;
+      if (!stepToSkip) {
+        return;
+      }
+      setIsReporting(true);
+      setReportError(null);
+      try {
+        await createReport({
+          containerId: payload.containerId,
+          type: payload.type,
+          comment: payload.comment,
+          imageFile: payload.imageFile,
+        });
+        await skipTourStep(stepToSkip.id);
+        setReportStep(null);
+        setToast({
+          message: "Signalement envoyé — passage à l'étape suivante",
+          variant: "success",
+        });
+        await loadTour();
+      } catch (error) {
+        setReportError(
+          error instanceof Error ? error.message : "Impossible d'envoyer le signalement."
+        );
+      } finally {
+        setIsReporting(false);
+      }
+    },
+    [loadTour, reportStep]
+  );
 
   const handleCompleteStep = useCallback(
     async (collectedVolume: number | undefined) => {
@@ -343,12 +392,10 @@ export default function AgentCollectesView() {
               step={currentPendingStep}
               tourStatus={tour.status}
               onValidate={setCompletionStep}
-              onReportRedirect={() =>
-                setToast({
-                  message: "Redirection vers signalement…",
-                  variant: "neutral",
-                })
-              }
+              onReport={(step) => {
+                setReportError(null);
+                setReportStep(step);
+              }}
             />
           ) : null}
         </>
@@ -362,6 +409,31 @@ export default function AgentCollectesView() {
         isSubmitting={completingStep}
         onClose={() => setCompletionStep(null)}
         onSubmit={(volume) => void handleCompleteStep(volume)}
+      />
+
+      <ReportAnomalyDrawer
+        isOpen={reportStep !== null}
+        context={
+          reportStep
+            ? {
+                containerId: reportStep.containerId,
+                serialNumber: reportStep.serialNumber,
+                zoneName: tour.zones[0]?.name ?? tour.zone.name,
+              }
+            : null
+        }
+        isSubmitting={isReporting}
+        submitError={reportError}
+        onClose={() => {
+          if (!isReporting) {
+            setReportStep(null);
+            setReportError(null);
+          }
+        }}
+        onSubmit={handleReportSubmit}
+        onFileTooLarge={() =>
+          setToast({ message: REPORT_IMAGE_TOO_LARGE_TOAST, variant: "warning" })
+        }
       />
 
       {toast ? (

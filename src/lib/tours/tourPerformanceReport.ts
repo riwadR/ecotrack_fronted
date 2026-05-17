@@ -94,3 +94,25 @@ export function buildStepTimelineNotes(steps: TourStepDTO[]): Map<string, string
 export function shouldShowPerformanceReport(tour: TourResponseDTO): boolean {
   return tour.status === "IN_PROGRESS" || tour.status === "COMPLETED";
 }
+
+export function formatTourCompletionIncidents(tour: TourResponseDTO): string {
+  const skipped = tour.skippedStepsCount ?? 0;
+  const anomalies = tour.anomaliesReportedCount ?? 0;
+  const parts: string[] = [];
+
+  if (skipped > 0) {
+    parts.push(
+      `${skipped} bac${skipped > 1 ? "s" : ""} ignoré${skipped > 1 ? "s" : ""}`
+    );
+  }
+  if (anomalies > 0) {
+    parts.push(
+      `${anomalies} signalement${anomalies > 1 ? "s" : ""}`
+    );
+  }
+
+  if (parts.length === 0) {
+    return "Aucun incident signalé";
+  }
+  return parts.join(" / ");
+}

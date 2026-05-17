@@ -10,14 +10,43 @@ import type {
   UpdateReportStatusPayload,
 } from "@/models/report";
 
-export async function createReport(
-  payload: CreateReportPayload
-): Promise<ReportResponse> {
+export type CreateReportInput = {
+  containerId: string;
+  type: CreateReportPayload["type"];
+  comment?: string;
+  latitude?: number;
+  longitude?: number;
+  imageFile?: File | null;
+};
+
+export async function createReport(input: CreateReportInput): Promise<ReportResponse> {
+  const formData = new FormData();
+  const reportJson = JSON.stringify({
+    containerId: input.containerId,
+    type: input.type,
+    comment: input.comment?.trim() || undefined,
+    latitude: input.latitude,
+    longitude: input.longitude,
+  });
+  formData.append(
+    "report",
+    new Blob([reportJson], { type: "application/json" })
+  );
+  if (input.imageFile) {
+    formData.append("image", input.imageFile);
+  }
+
   try {
-    const { data } = await backendApiClient.post<ReportResponse>(
-      "reports",
-      payload
-    );
+    const { data } = await backendApiClient.post<ReportResponse>("reports", formData, {
+      transformRequest: [
+        (data, headers) => {
+          if (data instanceof FormData) {
+            delete headers["Content-Type"];
+          }
+          return data;
+        },
+      ],
+    });
     return data;
   } catch (error) {
     if (isAxiosError(error) && error.response?.status === 409) {

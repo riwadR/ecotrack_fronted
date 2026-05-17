@@ -165,3 +165,13 @@ export async function completeTourStep(
     throw toApiError(error, "Impossible de valider cette collecte.");
   }
 }
+
+export async function skipTourStep(stepId: string): Promise<void> {
+  try {
+    await backendApiClient.patch(
+      `tours/steps/${encodeURIComponent(stepId)}/skip`
+    );
+  } catch (error) {
+    throw toApiError(error, "Impossible de passer cette étape.");
+  }
+}
