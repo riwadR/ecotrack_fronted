@@ -3,16 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { FileText, type LucideIcon } from "lucide-react";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { Role } from "@/models/user";
 
-type NavLink = { href: string; label: string; roles: Role[] };
+type NavLink = { href: string; label: string; roles: Role[]; icon?: LucideIcon };
 
 const NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "🏠 Dashboard", roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
   { href: "/dashboard/capteurs", label: "📡 Capteurs", roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/dashboard/collectes", label: "🗑️ Collectes", roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/dashboard/alertes", label: "⚠️ Alertes", roles: ["ADMIN", "MANAGER"] },
+  {
+    href: "/dashboard/rapports",
+    label: "Rapports",
+    roles: ["ADMIN", "MANAGER"],
+    icon: FileText,
+  },
   { href: "/dashboard/admin/users", label: "👥 Utilisateurs", roles: ["ADMIN"] },
   { href: "/dashboard/profile", label: "👤 Profil", roles: ["ADMIN", "MANAGER", "AGENT", "CITIZEN"] },
   {
@@ -89,7 +96,7 @@ export default function Sidebar({ role, username }: SidebarProps) {
   );
 
   const renderNavLinks = (onNavigate: () => void) =>
-    filteredLinks.map(({ href, label }) => {
+    filteredLinks.map(({ href, label, icon: Icon }) => {
       const isActive =
         href === "/dashboard"
           ? pathname === "/dashboard" || pathname === "/dashboard/"
@@ -103,6 +110,7 @@ export default function Sidebar({ role, username }: SidebarProps) {
           }}
           className={navLinkClassName(isActive)}
         >
+          {Icon ? <Icon className="mr-2 inline h-4 w-4 shrink-0 opacity-90" aria-hidden /> : null}
           {label}
         </Link>
       );

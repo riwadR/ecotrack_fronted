@@ -11,6 +11,10 @@ import type {
   UpdateReportStatusPayload,
 } from "@/models/report";
 import { buildDateRangeParams, type DateRangeQueryInput } from "@/lib/api/dateRangeParams";
+import {
+  buildPdfExportFilename,
+  parseContentDispositionFilename,
+} from "@/lib/reports/pdfExportFilename";
 
 export type CreateReportInput = {
   containerId: string;
@@ -91,5 +95,44 @@ export async function updateReportStatus(
     return data;
   } catch (error) {
     throw toApiError(error, "Impossible de mettre à jour le signalement.");
+  }
+}
+
+export type PdfExportResult = {
+  blob: Blob;
+  filename: string;
+};
+
+/**
+ * Downloads the UC-G03 consolidated activity report as a PDF blob and resolved filename.
+ */
+export async function exportPdfReport(
+  startDate?: string,
+  endDate?: string
+): Promise<PdfExportResult> {
+  try {
+    const params: Record<string, string> = {};
+    if (startDate) {
+      params.startDate = startDate;
+    }
+    if (endDate) {
+      params.endDate = endDate;
+    }
+
+    const response = await backendApiClient.get<Blob>("reports/export-pdf", {
+      params,
+      responseType: "blob",
+      headers: { Accept: "application/pdf" },
+    });
+
+    const headerFilename = parseContentDispositionFilename(
+      response.headers["content-disposition"]
+    );
+    const filename =
+      headerFilename ?? buildPdfExportFilename(startDate, endDate);
+
+    return { blob: response.data, filename };
+  } catch (error) {
+    throw toApiError(error, "Impossible de générer le rapport PDF.");
   }
 }

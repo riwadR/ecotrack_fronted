@@ -11,6 +11,32 @@ function isNullBodyStatus(status: number) {
   return status === 204 || status === 205 || status === 304;
 }
 
+function isBinaryUpstreamBody(contentType: string) {
+  return (
+    contentType.startsWith("image/") ||
+    contentType.includes("application/pdf") ||
+    contentType.includes("application/octet-stream")
+  );
+}
+
+async function upstreamBodyToNextResponse(
+  upstreamRes: Response,
+  resHeaders: Headers
+): Promise<NextResponse> {
+  if (isNullBodyStatus(upstreamRes.status)) {
+    return new NextResponse(null, { status: upstreamRes.status, headers: resHeaders });
+  }
+
+  const upstreamContentType = upstreamRes.headers.get("content-type") ?? "";
+  if (isBinaryUpstreamBody(upstreamContentType)) {
+    const buffer = await upstreamRes.arrayBuffer();
+    return new NextResponse(buffer, { status: upstreamRes.status, headers: resHeaders });
+  }
+
+  const body = await upstreamRes.text();
+  return new NextResponse(body, { status: upstreamRes.status, headers: resHeaders });
+}
+
 async function proxy(req: NextRequest, method: string) {
   const cookieStore = await cookies();
   let accessToken = cookieStore.get("accessToken")?.value;
@@ -79,12 +105,7 @@ async function proxy(req: NextRequest, method: string) {
       resHeaders.delete("content-encoding");
       resHeaders.delete("content-length");
 
-      const res = isNullBodyStatus(upstreamRes.status)
-        ? new NextResponse(null, { status: upstreamRes.status, headers: resHeaders })
-        : new NextResponse(await upstreamRes.text(), {
-            status: upstreamRes.status,
-            headers: resHeaders,
-          });
+      const res = await upstreamBodyToNextResponse(upstreamRes, resHeaders);
       setAuthCookiesOnResponse(
         res,
         refreshed.accessToken,
@@ -100,21 +121,7 @@ async function proxy(req: NextRequest, method: string) {
   resHeaders.delete("content-encoding");
   resHeaders.delete("content-length");
 
-  if (isNullBodyStatus(upstreamRes.status)) {
-    return new NextResponse(null, {
-      status: upstreamRes.status,
-      headers: resHeaders,
-    });
-  }
-
-  const upstreamContentType = upstreamRes.headers.get("content-type") ?? "";
-  if (upstreamContentType.startsWith("image/")) {
-    const buffer = await upstreamRes.arrayBuffer();
-    return new NextResponse(buffer, { status: upstreamRes.status, headers: resHeaders });
-  }
-
-  const body = await upstreamRes.text();
-  return new NextResponse(body, { status: upstreamRes.status, headers: resHeaders });
+  return upstreamBodyToNextResponse(upstreamRes, resHeaders);
 }
 
 export async function GET(req: NextRequest) {
